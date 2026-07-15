@@ -1,0 +1,17 @@
+{
+  // Visit https://aka.ms/tsconfig to read more about this file
+  "compilerOptions": {
+
+
+    // File Layout
+    "rootDir": "./src",  //where your typescropt code is available
+    "outDir": "./dist",  //define where compiled code goes as ts cnverts all the code to js 
+    "module": "commonjs",
+    "target": "es6",
+    "types": ["node"],
+    
+    "strict": true,
+    "esModuleInterop": true,
+    
+  }
+}

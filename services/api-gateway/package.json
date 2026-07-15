@@ -1,0 +1,35 @@
+{
+  "name": "api-gateway",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "prebuild": "echo \"\u001b[2m[clean] 🧹 removing old files...\u001b[0m\" && rimraf dist",
+    "build": "echo \"\u001b[37m[build] ⚡ compiling...\u001b[0m\" && tsc && echo \"\u001b[32m  ✅ done\u001b[0m\"",
+    "dev": "echo \"\u001b[36m[dev] ▶️  starting...\u001b[0m\" && tsx watch --clear-screen=false ./src/server.ts",
+    "dev:check": "echo \"\u001b[36m[dev] 🔍 type-check + run...\u001b[0m\" && (tsc --watch --noEmit & tsx watch ./src/server.ts)",
+    "dev:debug": "echo \"\u001b[36m[dev] 🐛 debug port 9229...\u001b[0m\" && tsx --inspect --inspect-brk watch ./src/server.ts",
+    "start": "echo \"\u001b[35m[prod] 🚀 starting...\u001b[0m\" && NODE_ENV=production node ./dist/server.js",
+    "test": "echo \"\u001b[33m[test] 🧪 running...\u001b[0m\" && node --test ./dist/**/*.test.js",
+    "lint": "echo \"\u001b[34m[lint] 🔍 checking...\u001b[0m\" && eslint . --ext .ts --fix",
+    "format": "echo \"\u001b[34m[format] ✨ formatting...\u001b[0m\" && prettier --write \"src/**/*.ts\"",
+    "typecheck": "echo \"\u001b[37m[types] 📝 checking...\u001b[0m\" && tsc --noEmit",
+    "clean": "echo \"\u001b[2m[clean] 🧹 cleaning...\u001b[0m\" && rimraf dist .cache"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@types/node": "^26.1.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-http-proxy": "^2.1.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/express-http-proxy": "^1.6.7",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}
