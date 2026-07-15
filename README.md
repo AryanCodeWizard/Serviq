@@ -1,10 +1,10 @@
-# KamWale
-# KamWale
+# Serviq
 
 ## Changelog
 
-- Initial commit
-- Initial commit
-- Add root gitignore
-- Merge origin/main into main
-- feat(auth): add OTP signup, login, and gateway update
+- chore: initialize project structure and dependencies
+- feat(auth): add signup and OTP verification
+- feat(auth): add login flow
+- feat(auth): add forgot password reset flow
+- feat(mail): add email delivery service
+- feat(gateway): add auth proxy gateway
