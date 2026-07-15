@@ -5,6 +5,7 @@ import { sendEmailService } from "../services/otp.service";
 import { ApiResponse } from "../types/apiResponse.types";
 import { signUpService } from "../services/auth.service";
 import { loginService } from "../services/auth.service";
+import { forgotPasswordService, verifyOtpServiceCall, resetPasswordService, updatePasswordService } from "../services/password.service";
 
 export const sendEmailController = async (req: Request, res: Response) => {
     try {
@@ -107,6 +108,130 @@ export const loginController = async (req: Request, res: Response) => {
         } as ApiResponse<typeof user>);
     }
     catch(error:any){   
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Sever Error"
+        })
+    }
+}
+
+export const forgotPasswordController = async(req: Request, res: Response) => {
+    try{
+        //fetch data from request body
+        const { email } = req.body;
+        //check if email is provided
+        if(!email){
+            throw new AppError("Please provide email", 400);
+        }
+        //call service to send reset password link
+        const resetPasswordServiceCall = await forgotPasswordService({email});
+
+        res.status(200).json({
+            success: true,
+            message: "Reset password link sent successfully",
+            data: resetPasswordServiceCall
+        } as ApiResponse<typeof resetPasswordServiceCall>);
+
+    }
+    catch(error:any){
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Sever Error"
+        })
+    }
+}
+
+export const forgotPasswordVerifyOtpController = async(req: Request, res: Response) => {
+    try{
+
+        //fetch data from request body
+        const { email, otp } = req.body;
+        //check if email and otp is provided
+        if(!email || !otp){
+            throw new AppError("Please provide email and otp", 400);
+        }
+        if(otp.length !== 4) {
+            throw new AppError("Otp should be 4 digit", 400);
+        }
+        //call service to verify otp
+        const verifyOtpResult = await verifyOtpServiceCall({ email, otp });
+        console.log("verifyOtpResult", verifyOtpResult);
+
+
+        res.status(200).json({
+            success: true,
+            message: "Otp verified successfully",
+            data: verifyOtpResult
+        } as ApiResponse<typeof verifyOtpResult>);
+
+    }
+    catch(error:any){
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Sever Error"
+        })
+    }
+}
+
+export const resetPasswordController = async(req: Request, res: Response) => {
+        try{
+            //fetch data from request body
+            const {newPassword, confirmPassword, token } = req.body;
+            //check if email and new password is provided
+            if(!newPassword || !confirmPassword){
+                throw new AppError("Please provide new password, confirm new password", 400);
+            }
+            if(!token){ 
+                throw new AppError("Please provide token or something went wrong while fetching the token", 400);
+            }
+            if(newPassword.length < 8){
+                throw new AppError("New password should be atleast 8 charcters long", 422);
+            }
+            if(newPassword !== confirmPassword){
+                throw new AppError("New password and Confirm new password should be same", 422);
+            }
+            //call service to reset password
+            const resetPasswordResult = await resetPasswordService({newPassword, token });
+
+            res.status(200).json({
+                success: true,
+                message: "Password reset successfully",
+                data: resetPasswordResult
+            } as ApiResponse<typeof resetPasswordResult>);
+
+        }
+        catch(error:any){
+            console.log(error);
+            res.status(error.statusCode || 500).json({
+                success: false,
+                message: error.message || "Internal Sever Error"
+            })
+        }   
+}
+
+export const updatePasswordController = async(req: Request, res: Response) => {
+    try{
+        const { userId, oldPassword, newPassword } = req.body;
+        if(!userId || !oldPassword || !newPassword){
+            throw new AppError("Please provide userId, oldPassword and newPassword", 400);
+        }
+        if(newPassword.length < 8){
+            throw new AppError("New password should be atleast 8 charcters long", 422);
+        }
+
+        const updatePasswordResult = await updatePasswordService({ userId, oldPassword, newPassword });
+
+        res.status(200).json({
+            success: true,
+            message: "Password updated successfully",
+            data: updatePasswordResult
+        } as ApiResponse<typeof updatePasswordResult>);
+
+    }
+    catch(error:any){
         console.log(error);
         res.status(error.statusCode || 500).json({
             success: false,
