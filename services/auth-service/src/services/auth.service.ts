@@ -57,3 +57,33 @@ export const signUpService = async (data: ISignUpData)=>{
 
 }
 
+export const loginService = async (data: { email: string, password: string }) => {
+    const { email, password } = data;
+    //check if user exists
+    const existingUser = await User.findOne({ email: email });
+    if (!existingUser) {
+        throw new AppError("User does not exist with this email", 404);
+    }
+
+    //compare password
+    const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+    if (!isPasswordValid) {
+        throw new AppError("Invalid password", 401);
+    }
+
+    const payload = {
+        email: email,
+        role: existingUser.role,
+        userId: existingUser._id
+    } // Log the secret key for debugging
+
+    const token = await jsonwebtoken.sign(payload, process.env.JWT_SECRET_KEY ?? "default_secret", { expiresIn: "1h" });
+
+    const userObj: any = existingUser.toObject(); // Convert Mongoose document to plain object
+    userObj.token = token; // Add the token to the user object
+    userObj.password = undefined;
+    console.log(userObj);    // Remove the password field from the user object
+
+    return userObj; 
+}
+

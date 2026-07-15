@@ -4,6 +4,7 @@ import { AppError } from "../utils/appError";
 import { sendEmailService } from "../services/otp.service";
 import { ApiResponse } from "../types/apiResponse.types";
 import { signUpService } from "../services/auth.service";
+import { loginService } from "../services/auth.service";
 
 export const sendEmailController = async (req: Request, res: Response) => {
     try {
@@ -76,6 +77,36 @@ export const signUpController = async (req: Request, res: Response) => {
 
     }
     catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Sever Error"
+        })
+    }
+}
+
+export const loginController = async (req: Request, res: Response) => {
+    try{
+        const { email, password } = req.body;
+        if(!email || !password){
+            throw new AppError("Please provide email and password", 400);
+        }
+        
+        //call service to login user
+        const user = await loginService({email, password});
+
+        const options = {
+            expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            httpOnly: true, // Cookie accessible only by the server
+        }
+
+        res.cookie("token", user.token, options).status(200).json({
+            success: true,
+            message: "User logged in successfully",
+            data: user
+        } as ApiResponse<typeof user>);
+    }
+    catch(error:any){   
         console.log(error);
         res.status(error.statusCode || 500).json({
             success: false,
