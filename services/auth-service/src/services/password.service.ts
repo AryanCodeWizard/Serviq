@@ -55,7 +55,7 @@ export const forgotPasswordService = async (data: IForgotPasswordData) => {
     const mailServiceCall = await axios.post(`${mailServiceBaseUrl}/api/v1/send-mail`, {
         email: email,
         subject: "Your OTP for Password Reset",
-        body: sendmailTemplate(existingUser.fullName, Number(newOtp)),
+        body: sendmailTemplate(existingUser.fullName, Number(otp)),
         from: "noreply@kamwale.com"
     });
 

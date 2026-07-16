@@ -1,4 +1,4 @@
-export const sendmailTemplate = (fullName: string, newOtp: number) => {
+export const sendmailTemplate = (fullName: string, newOtp: string | number) => {
     return `
 <!DOCTYPE html>
 <html>

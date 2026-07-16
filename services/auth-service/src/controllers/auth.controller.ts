@@ -214,12 +214,21 @@ export const resetPasswordController = async(req: Request, res: Response) => {
 
 export const updatePasswordController = async(req: Request, res: Response) => {
     try{
-        const { userId, oldPassword, newPassword } = req.body;
-        if(!userId || !oldPassword || !newPassword){
-            throw new AppError("Please provide userId, oldPassword and newPassword", 400);
+
+        const userIdHeader = req.headers['user_id'];
+        if (!userIdHeader || Array.isArray(userIdHeader)) {
+            throw new AppError("User not found", 404);
+        }
+        const userId = userIdHeader;
+        const {oldPassword, newPassword, confirmPassword} = req.body;
+        if(!oldPassword || !newPassword){
+            throw new AppError("Please provide oldPassword and newPassword", 400);
         }
         if(newPassword.length < 8){
             throw new AppError("New password should be atleast 8 charcters long", 422);
+        }
+        if(newPassword !== confirmPassword){
+            throw new AppError("New password and Confirm new password should be same", 422);
         }
 
         const updatePasswordResult = await updatePasswordService({ userId, oldPassword, newPassword });

@@ -34,7 +34,7 @@ export const sendEmailService = async (data: IUserData) => {
     const mailServiceCall = await axios.post(`${mailServiceBaseUrl}/api/v1/send-mail`, {
         email: email,
         subject: "Your OTP for Registration",
-        body: sendmailTemplate(fullName, Number(newOtp)),
+        body: sendmailTemplate(fullName, newOtp),
         from: "noreply@kamwale.com"
     });
 
