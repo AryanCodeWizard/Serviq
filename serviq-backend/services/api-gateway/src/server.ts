@@ -4,12 +4,14 @@ import proxy from 'express-http-proxy';
 import { authMiddleware } from './middlewares/auth.middleware';
 import cookieParser from 'cookie-parser';
 import { Request,Response,NextFunction } from 'express';
+import cors from 'cors';
 dotenv.config();
 
 const app=express();
 
 const PORT = process.env.PORT;
 app.use(cookieParser());
+app.use(cors());
 
 //logger 
 app.use((req: Request,res: Response,next: NextFunction)=>{
