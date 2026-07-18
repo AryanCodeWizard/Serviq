@@ -22,6 +22,7 @@ export const sendEmailController = async (req: Request, res: Response) => {
         //service call
 
         const newOtp = await sendEmailService({ fullName, email });
+       
 
         res.status(200).json({
             success: true,
@@ -42,7 +43,8 @@ export const sendEmailController = async (req: Request, res: Response) => {
 export const signUpController = async (req: Request, res: Response) => {
     try {
         //fetch data from request body
-        const { fullName, email, password, confirmPassword, role, otp } = req.body;
+        const { fullName, email, password,confirmPassword, role, otp } = req.body;
+        console.log(req.body);
         if (!fullName || !email || !password || !role || !otp) {
             throw new AppError("Please fill all the Inputs Field something is missing", 400);
         }
@@ -56,9 +58,9 @@ export const signUpController = async (req: Request, res: Response) => {
         if (password.length < 8) {
             throw new AppError("Password should be atleast 8 charcters long", 422);
         }
-        if (password !== confirmPassword) {
-            throw new AppError("Password and Confirm Password should be same", 422);
-        }
+        // if (password !== confirmPassword) {
+        //     throw new AppError("Password and Confirm Password should be same", 422);
+        // }
         //call service to create user [SIGNUP];
 
         const newUser = await signUpService({ fullName, email, password, role, otp });

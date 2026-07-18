@@ -3,5 +3,6 @@ export type signUpPayload = {
     email:string,
     role: string,
     password: string
-    confirmPassword: string
+    confirmPassword: string,
+    otp?:string
 }

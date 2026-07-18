@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { signupMailSendAPICall } from "../services/signUp";
+import { useNavigate } from "react-router-dom";
 
 const SignUpForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 const [loading, setLoading] = useState(false);
+const navigate=useNavigate();
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -67,6 +69,9 @@ const onSubmitHandler = async (
   console.log(response);
 
   toast.success(response.message);
+  navigate("/verify-otp",{
+    state: formData,
+  })
 
 } catch (error) {
   console.log(error);

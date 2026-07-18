@@ -28,6 +28,7 @@ export const sendEmailService = async (data: IUserData) => {
             specialChars: false
         }
     )
+     console.log(newOtp);
 
     const client = getRedisClient();
     await client.set(`signup_otp:${email}`,newOtp,{EX:300});
