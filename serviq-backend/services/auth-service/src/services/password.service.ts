@@ -1,7 +1,6 @@
 import { User } from "../model/user.model";
 import { AppError } from "../utils/appError";
 import otpGenerator from "otp-generator";
-import { Otp } from "../model/otp.model";
 import axios from "axios";
 import { sendmailTemplate } from "../templates/mail.template";
 import crypto from "crypto";
@@ -61,7 +60,7 @@ export const forgotPasswordService = async (data: IForgotPasswordData) => {
     const mailServiceCall = await axios.post(`${mailServiceBaseUrl}/api/v1/send-mail`, {
         email: email,
         subject: "Your OTP for Password Reset",
-        body: sendmailTemplate(existingUser.fullName, Number(newOtp)),
+        body: sendmailTemplate(existingUser.fullName, otp),
         from: "noreply@kamwale.com"
     });
 

@@ -2,11 +2,20 @@ import express from 'express';
 import dotenv from 'dotenv';
 import proxy from 'express-http-proxy';
 import { authMiddleware } from './middlewares/auth.middleware';
+import cookieParser from 'cookie-parser';
+import { Request,Response,NextFunction } from 'express';
 dotenv.config();
 
 const app=express();
 
 const PORT = process.env.PORT;
+app.use(cookieParser());
+
+//logger 
+app.use((req: Request,res: Response,next: NextFunction)=>{
+    console.log(`${req.method} ${req.url}`);
+    next();
+})
 
 const authProxy = proxy("http://localhost:3001", {
     proxyReqPathResolver: (req) => {
@@ -21,25 +30,25 @@ const authProxy = proxy("http://localhost:3001", {
         if (user?.userId) {
             proxyReqOpts.headers["userId"] = user.userId;
         }
-
-        console.log("User:", user);
-        console.log("Proxy Request:", proxyReqOpts);
-
+        console.log("USER id: ", user?.userId);
         return proxyReqOpts;
+    },
+    //if sercie is down
+    proxyErrorHandler: (err:any,res:Response,next:NextFunction) => {
+        console.log("Proxy Error: ",err.message);
+        res.status(502).json({
+        success: false,
+        message: "Auth service is unavailable",
+    });
     }
+
 });
-
-//Public Routes
-app.use("/api/v1/auth/send-email-auth",authProxy);
-app.use("/api/v1/auth/signUp",authProxy);
-app.use("/api/v1/auth/login",authProxy);
-app.use("/api/v1/auth/forgot-password",authProxy);
-app.use("/api/v1/auth/reset-password",authProxy);
-
-//Protected Routes
-app.use("/api/v1/auth/forgot-password/verify-otp",authMiddleware,authProxy);
 app.use("/api/v1/auth/update-password",authMiddleware,authProxy);
 
+//Public Routes
+app.use("/api/v1/auth/",authProxy);
+
+//global error middleware;
 
 
 app.listen(PORT,()=>{

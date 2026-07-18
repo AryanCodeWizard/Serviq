@@ -230,7 +230,7 @@ export const updatePasswordController = async(req: Request, res: Response) => {
 
         // const userIdHeader = req.headers['userId'];
 
-      console.log(req.headers.userid);
+      console.log("User header data: ",req.headers.userid);
 
         // if (!userIdHeader || Array.isArray(userIdHeader)) {
         //     throw new AppError("User not found", 404);

@@ -50,6 +50,7 @@ export const signUpService = async (data: ISignUpData)=>{
     const refreshToken = await jsonwebtoken.sign(payload,process.env.REFRESH_TOKEN_JWT_SECRET ?? "default_secret",{expiresIn:"7d"})
 
 
+
     // const userObj=  JSON.parse(JSON.stringify(newUser));  // Convert Mongoose document to plain object
     const userObj: any = newUser.toObject(); // Convert Mongoose document to plain object
     userObj.accessToken = accessToken; // Add the token to the user object
