@@ -12,10 +12,10 @@ interface ISignUpData {
     role: "User" | "Admin" | "Worker";
     otp: string;
 }
-export const signUpService = async (data: ISignUpData)=>{
-    const {fullName,email,password,role,otp} = data;
+export const signUpService = async (data: ISignUpData) => {
+    const { fullName, email, password, role, otp } = data;
     //check if user already exists
-    const existingUser = await User.findOne({ email: email  });
+    const existingUser = await User.findOne({ email: email });
     if (existingUser) {
         throw new AppError("User already exists with this email", 409);
     }
@@ -41,13 +41,13 @@ export const signUpService = async (data: ISignUpData)=>{
     });
 
     const payload = {
-        email:email,
-        role:role,
-        userId:newUser._id
+        email: email,
+        role: role,
+        userId: newUser._id
     }
 
     const accessToken = await jsonwebtoken.sign(payload, process.env.ACCESS_TOKEN_JWT_SECRET ?? "default_secret", { expiresIn: "10min" });
-    const refreshToken = await jsonwebtoken.sign(payload,process.env.REFRESH_TOKEN_JWT_SECRET ?? "default_secret",{expiresIn:"7d"})
+    const refreshToken = await jsonwebtoken.sign(payload, process.env.REFRESH_TOKEN_JWT_SECRET ?? "default_secret", { expiresIn: "7d" })
 
 
 
@@ -55,7 +55,7 @@ export const signUpService = async (data: ISignUpData)=>{
     const userObj: any = newUser.toObject(); // Convert Mongoose document to plain object
     userObj.accessToken = accessToken; // Add the token to the user object
     userObj.refreshToken = refreshToken;
-    userObj.password=undefined // Remove the password field from the user object
+    userObj.password = undefined // Remove the password field from the user object
 
 
     return userObj;
@@ -82,13 +82,15 @@ export const loginService = async (data: { email: string, password: string }) =>
         userId: existingUser._id
     } // Log the secret key for debugging
 
-    const token = await jsonwebtoken.sign(payload, process.env.JWT_SECRET_KEY ?? "default_secret", { expiresIn: "1h" });
+    const accessToken = await jsonwebtoken.sign(payload, process.env.ACCESS_TOKEN_JWT_SECRET ?? "default_secret", { expiresIn: "10min" });
+    const refreshToken = await jsonwebtoken.sign(payload, process.env.REFRESH_TOKEN_JWT_SECRET ?? "default_secret", { expiresIn: "7d" })
 
     const userObj: any = existingUser.toObject(); // Convert Mongoose document to plain object
-    userObj.token = token; // Add the token to the user object
+    userObj.accessToken = accessToken; // Add the token to the user object
+    userObj.refreshToken = refreshToken; // Add the token to the user object
     userObj.password = undefined;
     console.log(userObj);    // Remove the password field from the user object
 
-    return userObj; 
+    return userObj;
 }
 

@@ -23,7 +23,6 @@ const authProxy = proxy("http://localhost:3001", {
     proxyReqPathResolver: (req) => {
         return req.originalUrl.replace("/api/v1/auth", "");
     },
-
     proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
         const user = (srcReq as any).user;
 
@@ -43,7 +42,6 @@ const authProxy = proxy("http://localhost:3001", {
         message: "Auth service is unavailable",
     });
     }
-
 });
 app.use("/api/v1/auth/update-password",authMiddleware,authProxy);
 

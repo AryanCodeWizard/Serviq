@@ -1,154 +1,70 @@
-import React from "react";
+// SignUp.tsx
 import SignUpForm from "../components/SignUpForm";
-
-const features = [
-  {
-    title: "Verified Professionals",
-    description:
-      "Every worker is background verified and professionally trained before joining our platform.",
-    icon: "🛡️",
-  },
-  {
-    title: "Transparent Pricing",
-    description:
-      "Know the service price before booking. No hidden charges or surprises.",
-    icon: "💳",
-  },
-  {
-    title: "24×7 Customer Support",
-    description:
-      "Our support team is always available whenever you need assistance.",
-    icon: "🎧",
-  },
-];
-
-const stats = [
-  {
-    value: "50K+",
-    label: "Professionals",
-  },
-  {
-    value: "4.8★",
-    label: "Customer Rating",
-  },
-  {
-    value: "500K+",
-    label: "Happy Customers",
-  },
-];
 
 const SignUp = () => {
   return (
-    <main className="relative overflow-hidden bg-slate-50">
-      {/* Background Decorations */}
+    <main className="relative min-h-screen bg-white overflow-hidden">
+      {/* Subtle background pattern – geometric grid */}
+      <div className="absolute inset-0 -z-10 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px]" />
 
-      <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-blue-100 blur-3xl opacity-60" />
-
-      <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-cyan-100 blur-3xl opacity-60" />
-
-      <div className="relative mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-20">
-        <div className="grid grid-cols-1 items-start gap-16 lg:grid-cols-2">
-          {/* LEFT */}
-
-          <section>
-            <span className="inline-flex rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700">
-              Trusted by thousands of customers
-            </span>
-
-            <h1 className="mt-6 text-4xl font-black leading-tight text-slate-900 lg:text-6xl">
-              Create your account &
-              <span className="block text-blue-600">
-                book trusted professionals
-              </span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
-              Join India's trusted home service platform. Find verified workers,
-              transparent pricing, and hassle-free bookings for every service.
-            </p>
-
-            {/* Highlights */}
-
-            <div className="mt-10 space-y-4">
-              {[
-                "Instant booking confirmation",
-                "Background verified professionals",
-                "Transparent pricing",
-                "Secure online payments",
-                "100% trusted platform",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 font-bold text-green-600">
-                    ✓
-                  </div>
-
-                  <p className="font-medium text-slate-700">{item}</p>
-                </div>
-              ))}
+      <div className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 lg:grid-cols-2">
+        
+        {/* LEFT PANEL – Branding with visual flair */}
+        <div className="flex flex-col justify-center bg-gray-50 px-8 py-16 lg:px-16 xl:px-20">
+          {/* Decorative top element */}
+          <div className="mb-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-xl font-bold text-white shadow-lg">
+              U
             </div>
+          </div>
 
-            {/* Stats */}
+          <h1 className="text-4xl font-extrabold tracking-tight text-black sm:text-5xl lg:text-6xl">
+            Create your account<span className="block text-black">in seconds.</span>
+          </h1>
 
-            <div className="mt-12 grid grid-cols-3 gap-5">
-              {stats.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <h2 className="text-3xl font-black text-slate-900">
-                    {item.value}
-                  </h2>
+          <p className="mt-6 max-w-md text-lg leading-relaxed text-gray-600">
+            Join UrbanCo and book trusted home service professionals with transparent pricing, instant confirmation, and 24×7 support.
+          </p>
 
-                  <p className="mt-2 text-sm text-slate-500">{item.label}</p>
-                </div>
-              ))}
-            </div>
+          <div className="mt-10 space-y-5">
+            {[
+              { icon: "✓", text: "Background verified professionals" },
+              { icon: "✓", text: "Transparent pricing, no hidden costs" },
+              { icon: "✓", text: "Secure payments & SSL protected" },
+            ].map((item) => (
+              <div key={item.text} className="flex items-center gap-4">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black text-sm font-bold text-white">
+                  {item.icon}
+                </span>
+                <span className="text-base font-medium text-gray-700">{item.text}</span>
+              </div>
+            ))}
+          </div>
 
-            {/* Features */}
+          {/* Subtle decorative line */}
+          <div className="mt-14 hidden w-24 border-t-2 border-black/10 lg:block" />
+        </div>
 
-            <div className="mt-12 space-y-5">
-              {features.map((feature) => (
-                <div
-                  key={feature.title}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl"
-                >
-                  <div className="flex gap-5">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
-                      {feature.icon}
-                    </div>
+        {/* RIGHT PANEL – Form with elevated card */}
+        <div className="flex items-center justify-center px-6 py-12 lg:px-10">
+          <div className="w-full max-w-md">
+            {/* Floating card with soft shadow */}
+            <div className="rounded-[2rem] border border-gray-200 bg-white p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] sm:p-10">
+              <div className="mb-8 text-center">
+                <h2 className="text-2xl font-bold text-black">Welcome to UrbanCo</h2>
+                <p className="mt-2 text-gray-500">Sign up to get started</p>
+              </div>
 
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {feature.title}
-                      </h3>
-
-                      <p className="mt-2 leading-7 text-slate-600">
-                        {feature.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* RIGHT */}
-
-          <section className="w-full">
-            <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-2xl lg:p-10">
               <SignUpForm />
 
-              <div className="mt-8 border-t border-slate-200 pt-6">
-                <div className="flex flex-wrap justify-center gap-5 text-sm font-medium text-slate-500">
-                  <span>🔒 Secure Signup</span>
-
-                  <span>✔ SSL Protected</span>
-
-                  <span>⭐ Trusted Platform</span>
-                </div>
+              <div className="mt-8 text-center text-sm text-gray-500">
+                Already have an account?{" "}
+                <a href="/login" className="font-semibold text-black underline underline-offset-2 transition hover:text-gray-600">
+                  Log in
+                </a>
               </div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </main>

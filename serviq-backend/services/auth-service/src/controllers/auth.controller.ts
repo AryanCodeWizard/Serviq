@@ -6,6 +6,7 @@ import { signUpService } from "../services/auth.service";
 import { loginService } from "../services/auth.service";
 import { forgotPasswordService, verifyOtpServiceCall, resetPasswordService, updatePasswordService } from "../services/password.service";
 import { getRedisClient } from "../config/redis.config";
+import jwt from "jsonwebtoken";
 
 export const sendEmailController = async (req: Request, res: Response) => {
     try {
@@ -133,6 +134,7 @@ export const loginController = async (req: Request, res: Response) => {
 
 export const forgotPasswordController = async(req: Request, res: Response) => {
     try{
+        console.log(req.body)
         //fetch data from request body
         const { email } = req.body;
         //check if email is provided
@@ -270,3 +272,41 @@ export const updatePasswordController = async(req: Request, res: Response) => {
     }
 }
 
+export const logoutController = async (req: Request, res: Response) => {
+    try {
+        // Blacklist the access token from Authorization header if present
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            const token = authHeader.split(" ")[1];
+            try {
+                const decoded: any = jwt.decode(token);
+                if (decoded?.exp) {
+                    const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+                    if (ttl > 0) {
+                        const client = getRedisClient();
+                        await client.set(`blacklisted_token:${token}`, "1", { EX: ttl });
+                    }
+                }
+            } catch (_) {
+                // Token invalid or already expired — silently continue
+            }
+        }
+
+        // Clear the HTTP-only cookie
+        res.clearCookie("token", {
+            httpOnly: true,
+            sameSite: "strict",
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Logged out successfully",
+        } as ApiResponse<null>);
+    } catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+};
