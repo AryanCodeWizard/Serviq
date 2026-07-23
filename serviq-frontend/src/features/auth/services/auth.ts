@@ -34,7 +34,6 @@ export const loginAPICall = async(data: loginPayload)=>{
 
 
 export const forgotPasswordAPICall = async(data: forgotPasswordPayload)=>{
-    console.log(data);
     const response  = await forgotPasswordAPI(data);
     if(!response?.data?.success){
         throw new Error ("Error occurred while calling forgot password");
@@ -43,7 +42,6 @@ export const forgotPasswordAPICall = async(data: forgotPasswordPayload)=>{
 }
 
 export const forgotPasswordVerifyOTPCall = async(data: forgotPasswordVerifyOTPPayload) => {
-    console.log(data);
     const response  = await forgotPasswordVerifyOTP(data);
     if(!response?.data?.success){
         throw new Error ("Error occurred while verifying OTP");
