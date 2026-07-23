@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jsonwebtoken from "jsonwebtoken";
 import { RedisClient } from "redis";
 import { getRedisClient } from "../config/redis.config";
+import { sendProfileMaessage } from "../producers/profileProducer";
 
 interface ISignUpData {
     fullName: string;
@@ -40,6 +41,15 @@ export const signUpService = async (data: ISignUpData) => {
         role: role
     });
 
+
+    const profileImage = await `https://api.dicebear.com/10.x/initials/svg?seed=${fullName}`;
+
+    //send message to user-service
+
+    sendProfileMaessage({fullName,email,role,profileImage,authUserId: newUser._id});
+
+
+    
     const payload = {
         email: email,
         role: role,
@@ -85,11 +95,10 @@ export const loginService = async (data: { email: string, password: string }) =>
     const accessToken = await jsonwebtoken.sign(payload, process.env.ACCESS_TOKEN_JWT_SECRET ?? "default_secret", { expiresIn: "10min" });
     const refreshToken = await jsonwebtoken.sign(payload, process.env.REFRESH_TOKEN_JWT_SECRET ?? "default_secret", { expiresIn: "7d" })
 
-    const userObj: any = existingUser.toObject(); // Convert Mongoose document to plain object
-    userObj.accessToken = accessToken; // Add the token to the user object
-    userObj.refreshToken = refreshToken; // Add the token to the user object
+    const userObj: any = existingUser.toObject();
+    userObj.accessToken = accessToken;
+    userObj.refreshToken = refreshToken;
     userObj.password = undefined;
-    console.log(userObj);    // Remove the password field from the user object
 
     return userObj;
 }
