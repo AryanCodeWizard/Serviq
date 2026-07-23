@@ -45,7 +45,6 @@ export const signUpController = async (req: Request, res: Response) => {
     try {
         //fetch data from request body
         const { fullName, email, password,confirmPassword, role, otp } = req.body;
-        console.log(req.body);
         if (!fullName || !email || !password || !role || !otp) {
             throw new AppError("Please fill all the Inputs Field something is missing", 400);
         }
@@ -68,10 +67,11 @@ export const signUpController = async (req: Request, res: Response) => {
 
         const options = {
             expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-            httpOnly: true, // Cookie accessible only by the server
+            httpOnly: true,   // Not accessible via JS
+            sameSite: "lax" as const,  // Required for cross-port localhost
         }
 
-        res.cookie("token", newUser.token, options).status(201).json({
+        res.cookie("token", newUser.accessToken, options).status(201).json({
             success: true,
             message: "User created successfully",
             data: newUser
@@ -114,10 +114,11 @@ export const loginController = async (req: Request, res: Response) => {
 
         const options = {
             expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-            httpOnly: true, // Cookie accessible only by the server
+            httpOnly: true,   // Not accessible via JS
+            sameSite: "lax" as const,  // Required for cross-port localhost
         }
 
-        res.cookie("token", user.token, options).status(200).json({
+        res.cookie("token", user.accessToken, options).status(200).json({
             success: true,
             message: "User logged in successfully",
             data: user
@@ -134,7 +135,6 @@ export const loginController = async (req: Request, res: Response) => {
 
 export const forgotPasswordController = async(req: Request, res: Response) => {
     try{
-        console.log(req.body)
         //fetch data from request body
         const { email } = req.body;
         //check if email is provided
@@ -295,7 +295,7 @@ export const logoutController = async (req: Request, res: Response) => {
         // Clear the HTTP-only cookie
         res.clearCookie("token", {
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: "lax",
         });
 
         res.status(200).json({
