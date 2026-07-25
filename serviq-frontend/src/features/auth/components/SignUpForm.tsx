@@ -16,12 +16,12 @@ const SignUpForm = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "User",
+    // role: "User",
   });
 
-  const setRoleHandler = (role: string) => {
-    setFormData((prev) => ({ ...prev, role }));
-  };
+  // const setRoleHandler = (role: string) => {
+  //   setFormData((prev) => ({ ...prev, role }));
+  // };
 
   const onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,7 +49,7 @@ const SignUpForm = () => {
   return (
     <form onSubmit={onSubmitHandler} className="space-y-6">
       {/* Role toggle – sleek pill */}
-      <div className="grid grid-cols-2 rounded-full border border-gray-300 bg-gray-100 p-1">
+      {/* <div className="grid grid-cols-2 rounded-full border border-gray-300 bg-gray-100 p-1">
         {["User", "Worker"].map((role) => (
           <button
             key={role}
@@ -64,7 +64,7 @@ const SignUpForm = () => {
             {role}
           </button>
         ))}
-      </div>
+      </div> */}
 
       {/* Full Name & Email with subtle icon hint */}
       {[
