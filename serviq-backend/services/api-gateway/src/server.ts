@@ -26,16 +26,52 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ─── AUTH SERVICE PROXY (PORT 3001) ───────────────────────────────────
+
+// ─── AUTH SERVICE PROXY (PORT 3001) ───────────────────────────────────
 const authProxy = proxy("http://localhost:3001", {
     proxyReqPathResolver: (req) => {
         return req.originalUrl.replace("/api/v1/auth", "");
     },
+
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+        const user = (srcReq as any).user;
+
+        proxyReqOpts.headers = proxyReqOpts.headers || {};
+
+        // Pass authenticated user information
+        if (user?.userId) {
+            proxyReqOpts.headers["userid"] = user.userId;
+        }
+
+        if (user?.email) {
+            proxyReqOpts.headers["email"] = user.email;
+        }
+
+        if (user?.role) {
+            proxyReqOpts.headers["role"] = user.role;
+        }
+
+        console.log("Auth Proxy -> User:", user);
+
+        return proxyReqOpts;
+    },
+
+    proxyErrorHandler: (err: any, res: Response) => {
+        console.error("Auth Proxy Error:", err.message);
+
+        res.status(502).json({
+            success: false,
+            message: "Auth service is unavailable",
+        });
+    }
 });
+
+
+
 
 // ─── USER/PROFILE SERVICE PROXY (PORT 6000) ───────────────────────────
 const userServiceProxy = proxy("http://localhost:6000", {
     proxyReqPathResolver: (req) => {
-        // Trims the gateway gateway prefix before forwarding down to service
         return req.originalUrl.replace("/api/v1/users", "");
     },
     proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
@@ -43,8 +79,15 @@ const userServiceProxy = proxy("http://localhost:6000", {
         proxyReqOpts.headers = proxyReqOpts.headers || {};
 
         // Pass down user identities decoded from authMiddleware
+        // Note: HTTP headers are lowercased by Node.js — use "userid" consistently
         if (user?.userId) {
-            proxyReqOpts.headers["userId"] = user.userId;
+            proxyReqOpts.headers["userid"] = String(user.userId);
+        }
+        if (user?.email) {
+            proxyReqOpts.headers["email"] = user.email;
+        }
+        if (user?.role) {
+            proxyReqOpts.headers["role"] = user.role;
         }
         
         console.log("USER id sent to User Service: ", user?.userId);
