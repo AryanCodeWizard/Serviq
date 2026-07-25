@@ -22,7 +22,7 @@ interface IResetPasswordData {
 }
 
 interface IUpdatePasswordData {
-    userId: string | string[]; 
+    userId: string; 
     oldPassword: string;
     newPassword: string;
 }

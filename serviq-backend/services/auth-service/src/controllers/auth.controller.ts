@@ -10,8 +10,8 @@ import jwt from "jsonwebtoken";
 
 export const sendEmailController = async (req: Request, res: Response) => {
     try {
-        const { fullName, email, password, confirmPassword, role } = req.body;
-        if (!fullName || !email || !password || !role) {
+        const { fullName, email, password, confirmPassword} = req.body;
+        if (!fullName || !email || !password ) {
             throw new AppError("Please fill all the Inputs Field", 400);
         }
         if (password.length < 8) {
@@ -44,8 +44,8 @@ export const sendEmailController = async (req: Request, res: Response) => {
 export const signUpController = async (req: Request, res: Response) => {
     try {
         //fetch data from request body
-        const { fullName, email, password,confirmPassword, role, otp } = req.body;
-        if (!fullName || !email || !password || !role || !otp) {
+        const { fullName, email, password,confirmPassword, otp } = req.body;
+        if (!fullName || !email || !password  || !otp) {
             throw new AppError("Please fill all the Inputs Field something is missing", 400);
         }
         if (!otp) {
@@ -63,7 +63,7 @@ export const signUpController = async (req: Request, res: Response) => {
         // }
         //call service to create user [SIGNUP];
 
-        const newUser = await signUpService({ fullName, email, password, role, otp });
+        const newUser = await signUpService({ fullName, email, password, otp });
 
         const options = {
             expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
@@ -230,20 +230,15 @@ export const resetPasswordController = async(req: Request, res: Response) => {
 
 export const updatePasswordController = async(req: Request, res: Response) => {
     try{
-        // console.log("Api hit");
+        console.log("User header data: ", req.headers.userid);
 
-        // const userIdHeader = req.headers['userId'];
-
-      console.log("User header data: ",req.headers.userid);
-
-        // if (!userIdHeader || Array.isArray(userIdHeader)) {
-        //     throw new AppError("User not found", 404);
-        // }
-        const userId = req.headers.userid;
-        const {oldPassword, newPassword, confirmPassword} = req.body;
-        if(!userId){
-            throw new AppError("Unable to fetch userId from header token",404);
+        const userIdHeader = req.headers.userid;
+        if (!userIdHeader || Array.isArray(userIdHeader)) {
+            throw new AppError("Unable to fetch userId from header token", 404);
         }
+        const userId = userIdHeader as string;
+
+        const {oldPassword, newPassword, confirmPassword} = req.body;
         if(!oldPassword || !newPassword){
             throw new AppError("Please provide oldPassword and newPassword", 400);
         }

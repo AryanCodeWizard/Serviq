@@ -10,11 +10,10 @@ interface ISignUpData {
     fullName: string;
     email: string;
     password: string;
-    role: "User" | "Admin" | "Worker";
     otp: string;
 }
 export const signUpService = async (data: ISignUpData) => {
-    const { fullName, email, password, role, otp } = data;
+    const { fullName, email, password, otp } = data;
     //check if user already exists
     const existingUser = await User.findOne({ email: email });
     if (existingUser) {
@@ -37,8 +36,8 @@ export const signUpService = async (data: ISignUpData) => {
     const newUser = await User.create({
         fullName: fullName,
         email: email,
+        role:"User",
         password: hashedPassword,
-        role: role
     });
 
 
@@ -46,13 +45,12 @@ export const signUpService = async (data: ISignUpData) => {
 
     //send message to user-service
 
-    sendProfileMaessage({fullName,email,role,profileImage,authUserId: newUser._id});
+    sendProfileMaessage({fullName,email,profileImage,authUserId: newUser._id});
 
 
     
     const payload = {
         email: email,
-        role: role,
         userId: newUser._id
     }
 
