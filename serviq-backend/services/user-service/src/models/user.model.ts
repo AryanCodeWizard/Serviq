@@ -19,6 +19,13 @@ export interface IUser {
   isVerifiedWorker: boolean;
   isBlocked: boolean;
   lastActiveAt: string;
+  workerApplicationStatus: "Pending" | "Approved" | "Rejected";
+  adhaarCardNumber:string;
+  panCardNumber:string
+  citizenShip:string
+  nativeLanguages:string[],
+  profileImagePublicId:string,
+  age:number
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -54,6 +61,10 @@ const userSchema = new mongoose.Schema<IUser>(
       type: String,
       default: "",
     },
+    profileImagePublicId:{
+      type:String,
+      default:"",
+    },
 
     bio: {
       type: String,
@@ -67,13 +78,11 @@ const userSchema = new mongoose.Schema<IUser>(
       enum: ["User", "Worker", "Admin"],
       default: "User",
     },
+     age:{
+      type:Number
+     },
 
-    skills: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+    skills: [String],
 
     experience: {
       type: Number,
@@ -81,12 +90,7 @@ const userSchema = new mongoose.Schema<IUser>(
       min: 0,
     },
 
-    serviceCategory: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+    serviceCategory: [String],
 
     isAvailable: {
       type: Boolean,
@@ -133,6 +137,24 @@ const userSchema = new mongoose.Schema<IUser>(
     //   default: Date.now,
     default:"",
     },
+    workerApplicationStatus:{
+      type:String,
+      enum:["Pending", "Approved","Rejected"],
+      default: "Pending"
+    },
+    adhaarCardNumber:{
+      type:String,
+      required: true,
+    },
+    panCardNumber:{
+      type: String,
+      required: true,
+    },
+    citizenShip:{
+      type: String,
+      required: true,
+    },
+    nativeLanguages: [String]
   },
   {
     timestamps: true,
