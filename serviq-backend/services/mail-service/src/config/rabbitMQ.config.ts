@@ -11,18 +11,16 @@ export const rabbitMQConnect = async () => {
 
         const connection = await amqplib.connect("amqp://localhost");
         channel = await connection.createChannel();
+        await channel.assertExchange(mail_exchange, "direct", { durable: true });
 
-        await channel.assertExchange(mail_exchange, "direct", { durable: false });
-
-        await channel.assertQueue("mail_queue", { durable: false });
+        await channel.assertQueue("mail_queue", { durable: true });
 
         await channel.bindQueue(
             queue_name,
             mail_exchange,
             mail_routing_key
         );
-        console.log("Mail RabbitMQ connection established successfully");
-
+        console.log("RabbitMQ connection established successfully");
     }
     catch (error) {
         console.log(" Mail RabbitMQ connection failed", error);
