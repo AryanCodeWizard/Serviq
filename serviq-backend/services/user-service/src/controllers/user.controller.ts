@@ -1,8 +1,8 @@
-import { Request, Response } from "express"
+import { NextFunction, Request, Response } from "express"
 import { AppError } from "../utils/appError";
 import { UploadedFile } from "express-fileupload";
-import { createUserProfileService, getUserProfileDetails, updateProfileDetailsService, becomeWorkerService } from "../services/profile.service"
-
+import { createUserProfileService, getUserProfileDetails, updateProfileDetailsService, becomeWorkerService, addressUpdateService } from "../services/profile.service"
+import { getAllWorkersForVerificationService,becomeAdminService } from "../services/profileAdmin.service"
 
 export const createUserProfile = async (req: Request, res: Response) => {
     try {
@@ -19,7 +19,7 @@ export const createUserProfile = async (req: Request, res: Response) => {
 
         res.status(201).json({
             success: true,
-            message: "User Profil Ceated Successfully",
+            message: "User Profile Created Successfully",
             data: createUserProfileServiceCall
         })
     }
@@ -126,6 +126,89 @@ export const becomeWorker = async (req: Request, res: Response) => {
             message: "Successfully applied for worker",
             data: workerProfile,
         });
+
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+
+}
+
+export const addressUpdateController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+
+        const authUserId = req.headers["userid"] as string;
+        if (!authUserId) throw new AppError("Unable to fetch user Id", 400);
+
+        const { address } = req.body;
+        if (!address) throw new AppError("Please provide address", 400);
+
+        const updateAddress = await addressUpdateService({ address, authUserId });
+        console.log(updateAddress)
+        res.status(200).json({
+            success: true,
+            message: "Address Successfully Updated",
+            data: updateAddress
+        })
+
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+}
+
+export const getAllWorkersForVerification = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const authUserId = req.headers["userid"] as string;
+        if (!authUserId) throw new AppError("Unable to fetch user Id", 400);
+
+        const verified = await getAllWorkersForVerificationService(authUserId);
+        res.status(200).json({
+            success: true,
+            message: "Here is the list of all workers",
+            data: verified
+        })
+
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+}
+
+export const becomeAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const authUserId = req.headers["userid"] as string;
+        if (!authUserId) throw new AppError("Unable to fetch user Id", 400);
+
+        const {webSecret}= req.body;
+        if(!webSecret){
+            throw new AppError("Unauthorized secret key",403);
+        }
+
+        if(webSecret!==process.env.WEB_ADMIN_SECRET){
+            throw new AppError("Secret not matched, Unauthorised user",403);
+        }
+
+        const admin = await becomeAdminService(authUserId);
+
+        res.status(200).json({
+            success: true,
+            message:"You are successfully registered as admin",
+            data: admin
+        })
+
 
     }
     catch (error: any) {

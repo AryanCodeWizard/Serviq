@@ -144,15 +144,15 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     adhaarCardNumber:{
       type:String,
-      required: true,
+      default: "",
     },
     panCardNumber:{
       type: String,
-      required: true,
+      default: "",
     },
     citizenShip:{
       type: String,
-      required: true,
+      default: "",
     },
     nativeLanguages: [String]
   },

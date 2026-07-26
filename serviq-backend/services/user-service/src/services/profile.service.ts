@@ -7,6 +7,7 @@ interface IUserProfileData {
     email: string,
     fullName: string,
     profileImage: string,
+    role?: string,
 }
 interface IUpdateUserProfileData {
     authUserId: string,
@@ -31,6 +32,10 @@ interface IBecomeWorkerInterface {
     nativeLanguages: string[],
     age:number
 
+}
+interface IAddressUpdate {
+    address: string,
+    authUserId: string
 }
 
 export const createUserProfileService = async (data: IUserProfileData) => {
@@ -129,4 +134,19 @@ export const becomeWorkerService = async (data: IBecomeWorkerInterface) => {
 
     return updatedUserProfile;
 
+}
+
+export const addressUpdateService = async(data:IAddressUpdate)=>{
+    const {address,authUserId} = data;
+
+    const checkIfUserExist = await User.find({authUserId});
+    if(!checkIfUserExist){
+        throw new AppError("User not registered with us",404);
+    }
+
+    const existingUser = await User.findOneAndUpdate({authUserId:authUserId},{
+        address: address,
+    },{returnDocument:"after"});
+    // console.log(existingUser)
+    return existingUser;
 }

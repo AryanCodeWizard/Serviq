@@ -10,7 +10,7 @@ export const profileConsumer = ()=>{
 
         const channel = getRabbitMQChannel();
 
-        channel.consume(profile_queue,async(data)=>{
+        channel.consume(profile_queue,async(data: any)=>{
             if(data!==null){
                 try{
 
