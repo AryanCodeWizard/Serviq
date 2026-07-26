@@ -12,6 +12,10 @@ interface ISignUpData {
     password: string;
     otp: string;
 }
+interface IUpdateUserRole{
+    userId:string,
+    role: string
+}
 export const signUpService = async (data: ISignUpData) => {
     const { fullName, email, password, otp } = data;
     //check if user already exists
@@ -101,3 +105,16 @@ export const loginService = async (data: { email: string, password: string }) =>
     return userObj;
 }
 
+export const updateUserRoleService = async(data:IUpdateUserRole) => {
+    const {userId,role}=data;
+    const userDetails = await User.findById(userId);
+    if(!userDetails){
+        throw new AppError("User details not found",404);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId,{
+        role: role
+    },{returnDocument:"after"});
+
+    return updatedUser;
+}

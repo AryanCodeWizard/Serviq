@@ -3,7 +3,7 @@ import { AppError } from "../utils/appError";
 import { sendEmailService } from "../services/otp.service";
 import { ApiResponse } from "../types/apiResponse.types";
 import { signUpService } from "../services/auth.service";
-import { loginService } from "../services/auth.service";
+import { loginService,updateUserRoleService } from "../services/auth.service";
 import { forgotPasswordService, verifyOtpServiceCall, resetPasswordService, updatePasswordService } from "../services/password.service";
 import { getRedisClient } from "../config/redis.config";
 import jwt from "jsonwebtoken";
@@ -305,3 +305,35 @@ export const logoutController = async (req: Request, res: Response) => {
         });
     }
 };
+
+export const updateUserRole = async(req: Request, res: Response) => {
+    try{
+        const role = req.params.role as string;
+        const {webRoleToken,userId} = req.body;
+
+        if(!role || !webRoleToken || !userId){
+            throw new AppError("Something went wrong",400);
+        }
+
+        if(webRoleToken!==process.env.WEB_ADMIN_SECRET){
+            throw new AppError("Unauthorized secret key",403);
+        }
+
+
+        const updatedUser = await updateUserRoleService({role,userId});
+
+        res.status(200).json({
+            success: true,
+            message: "User role updated successfully",
+            data: updatedUser
+        })
+
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Sever Error"
+        })
+    }
+}

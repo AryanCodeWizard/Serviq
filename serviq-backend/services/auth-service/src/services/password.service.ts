@@ -55,7 +55,7 @@ export const forgotPasswordService = async (data: IForgotPasswordData) => {
     const newOtp = await client.set(`forgot_password_otp:${email}`,otp,{EX:300});
 
 
-    const mailServiceBaseUrl = process.env.MAIL_SERVICE_URL ?? "http://localhost:5000";
+    const mailServiceBaseUrl = process.env.MAIL_SERVICE_URL ?? "http://localhost:5001";
 
     const mailServiceCall = await axios.post(`${mailServiceBaseUrl}/api/v1/send-mail`, {
         email: email,
