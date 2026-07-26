@@ -7,18 +7,23 @@ import { AppError } from "../utils/appError";
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        //fetch token from header
-        const token = req.headers.authorization?.split(" ")[1]; // Assuming the token is sent as "Bearer <token>"
+        // fetch token from header (Bearer <token>) or cookie
+        const authHeader = req.headers.authorization;
+        const token = (authHeader && authHeader.startsWith("Bearer ")) 
+            ? authHeader.split(" ")[1] 
+            : (req.cookies?.token || (authHeader ? authHeader : undefined));
+
         if (!token) {
             throw new AppError("No token provided", 401);
         }
         
-        //verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY ?? "default_secret");
-        console.log("Decoded token value: ",decoded);
+        // verify the token using configured secrets
+        const secret = process.env.JWT_SECRET_KEY || process.env.ACCESS_TOKEN_JWT_SECRET || "aryan";
+        const decoded = jwt.verify(token, secret);
+        console.log("Decoded token value: ", decoded);
 
-        req.user=decoded; // Attach the decoded token payload to the request object for further use in the route handlers
-        next(); // Proceed to the next middleware or route handler
+        req.user = decoded; // Attach the decoded token payload to the request object
+        next();
     }
     catch (error) {
         next(error);
