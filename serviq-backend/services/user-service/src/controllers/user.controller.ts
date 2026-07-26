@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express"
 import { AppError } from "../utils/appError";
 import { UploadedFile } from "express-fileupload";
 import { createUserProfileService, getUserProfileDetails, updateProfileDetailsService, becomeWorkerService, addressUpdateService } from "../services/profile.service"
-import { getAllWorkersForVerificationService,becomeAdminService } from "../services/profileAdmin.service"
+import { getAllWorkersForVerificationService, becomeAdminService, getSingleWorkerForVerificationService } from "../services/profileAdmin.service"
 
 export const createUserProfile = async (req: Request, res: Response) => {
     try {
@@ -177,6 +177,30 @@ export const getAllWorkersForVerification = async (req: Request, res: Response, 
             data: verified
         })
 
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+}
+
+export const getSingleWorkerForVerification = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const authUserId = req.headers["userid"] as string;
+        if (!authUserId) throw new AppError("Unable to fetch user Id", 400);
+
+        const workerId = req.params.id as string;
+        if (!workerId) throw new AppError("Worker ID is required", 400);
+
+        const worker = await getSingleWorkerForVerificationService(authUserId, workerId);
+        res.status(200).json({
+            success: true,
+            message: "Worker verification details fetched successfully",
+            data: worker
+        });
     }
     catch (error: any) {
         console.log(error);
