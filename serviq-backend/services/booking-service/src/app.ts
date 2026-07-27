@@ -9,8 +9,10 @@ const app: Application= express();
 
 // also add error midllware in future
 
-// Parse multipart/form-data (needed for file uploads — populates req.body and req.files)
-app.use(express.json());
+// 1. THIS LINE MUST BE PRESENT AND PLACE BEFORE YOUR ROUTES
+app.use(express.json()); 
+
+// 2. Optional: If you send data via URL-encoded forms from Postman
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/",router);

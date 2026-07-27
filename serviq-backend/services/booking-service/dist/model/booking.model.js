@@ -1,26 +1,11 @@
-import mongoose from 'mongoose';
-
-export interface IBookingData {
-    customerAuthId: string;
-    workerAuthId: string;
-    service: string[];
-    bookingDate: string;
-    bookingTime: string;
-    customerAddress: string;
-    customerPhoneNumber: string;
-    workerPhoneNumber: string;
-    problemDescription: string;
-    price: number;
-    paymentMethod?: "Cash" | "Online" | "Not Selected";
-    paymentStatus?: "Pending" | "Paid" | "Refunded";
-    bookingStatus?: "Pending" | "Accepted" | "Cancelled" | "In Progress" | "Completed";
-    rejectReason?: string;
-    customerRating?: number;
-    customerReview?: string;
-    otp?: string;
-}
-
-const bookingSchema = new mongoose.Schema<IBookingData>({
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Booking = void 0;
+const mongoose_1 = __importDefault(require("mongoose"));
+const bookingSchema = new mongoose_1.default.Schema({
     customerAuthId: {
         type: String,
         required: true
@@ -61,18 +46,18 @@ const bookingSchema = new mongoose.Schema<IBookingData>({
     },
     paymentMethod: {
         type: String,
-        enum: ["Cash", "Online","Not Selected"],
+        enum: ["Cash", "Online", "Not Selected"],
         default: "Not Selected"
     },
     paymentStatus: {
         type: String,
         enum: ["Pending", "Paid", "Refunded"],
-         default: "Pending"
+        default: "Pending"
     },
     bookingStatus: {
         type: String,
         enum: ["Pending", "Accepted", "Cancelled", "In Progress", "Completed"],
-         default: "Pending"
+        default: "Pending"
     },
     rejectReason: {
         type: String,
@@ -86,7 +71,5 @@ const bookingSchema = new mongoose.Schema<IBookingData>({
     otp: {
         type: String
     }
-
-},{timestamps:true})
-
-export const Booking = mongoose.model("Booking",bookingSchema);
+}, { timestamps: true });
+exports.Booking = mongoose_1.default.model("Booking", bookingSchema);
