@@ -2,7 +2,8 @@ import { NextFunction, Request, Response } from "express"
 import { AppError } from "../utils/appError";
 import { UploadedFile } from "express-fileupload";
 import { createUserProfileService, getUserProfileDetails, updateProfileDetailsService, becomeWorkerService, addressUpdateService } from "../services/profile.service"
-import { getAllWorkersForVerificationService, becomeAdminService, getSingleWorkerForVerificationService } from "../services/profileAdmin.service"
+import { getAllWorkersForVerificationService, becomeAdminService, getSingleWorkerForVerificationService, wokerVerficationService, workerRejectVerificationService } from "../services/profileAdmin.service"
+import User from "../models/user.model";
 
 export const createUserProfile = async (req: Request, res: Response) => {
     try {
@@ -188,7 +189,6 @@ export const getAllWorkersForVerification = async (req: Request, res: Response, 
     }
 }
 
-
 export const getSingleWorkerForVerification = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authUserId = req.headers["userid"] as string;
@@ -218,20 +218,20 @@ export const becomeAdmin = async (req: Request, res: Response, next: NextFunctio
         const authUserId = req.headers["userid"] as string;
         if (!authUserId) throw new AppError("Unable to fetch user Id", 400);
 
-        const {webSecret}= req.body;
-        if(!webSecret){
-            throw new AppError("Unauthorized secret key",403);
+        const { webSecret } = req.body;
+        if (!webSecret) {
+            throw new AppError("Unauthorized secret key", 403);
         }
 
-        if(webSecret!==process.env.WEB_ADMIN_SECRET){
-            throw new AppError("Secret not matched, Unauthorised user",403);
+        if (webSecret !== process.env.WEB_ADMIN_SECRET) {
+            throw new AppError("Secret not matched, Unauthorised user", 403);
         }
 
         const admin = await becomeAdminService(authUserId);
 
         res.status(200).json({
             success: true,
-            message:"You are successfully registered as admin",
+            message: "You are successfully registered as admin",
             data: admin
         })
 
@@ -245,4 +245,86 @@ export const becomeAdmin = async (req: Request, res: Response, next: NextFunctio
         });
     }
 
+}
+
+export const wokerVerfication = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+
+        const authUserIdforRole = req.headers["userid"] as string;
+        if (!authUserIdforRole) throw new AppError("Unable to fetch user Id", 400);
+        console.log(authUserIdforRole);
+
+        // also add sceret verication below
+        
+
+        const userDetails = await User.findOne({authUserId:authUserIdforRole});
+
+        if(userDetails?.role!=='Admin'){
+            throw new AppError("Unauthorised Access",403);
+        }
+       
+
+        const authUserId = req.params.id as string;
+
+
+        const updatedDetails = await wokerVerficationService(authUserId);
+        console.log(updatedDetails);
+        
+
+        res.status(200).json({
+            success: true,
+            message:"Worker successfully verifed",
+            data: updatedDetails
+        })
+
+
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+}
+
+
+export const wokerVerficationReject = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+
+        const authUserIdforRole = req.headers["userid"] as string;
+        if (!authUserIdforRole) throw new AppError("Unable to fetch user Id", 400);
+        console.log(authUserIdforRole);
+
+         // also add sceret verication below
+        
+
+        const userDetails = await User.findOne({authUserId:authUserIdforRole});
+
+        if(userDetails?.role!=='Admin'){
+            throw new AppError("Unauthorised Access",403);
+        }
+       
+
+        const authUserId = req.params.id as string;
+
+
+        const updatedDetails = await workerRejectVerificationService(authUserId);
+        
+
+        res.status(200).json({
+            success: true,
+            message:"Worker verification rejected successfully",
+            data: updatedDetails
+        })
+
+
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
 }
