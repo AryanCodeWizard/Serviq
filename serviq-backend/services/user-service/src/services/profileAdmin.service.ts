@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 
 
 
-export const getAllWorkersForVerificationService = async(data:string)=>{
+export const getAllWorkersForVerificationService = async(data: string, status?: string)=>{
     const authUserId=data;
     const checkIfUserExist = await User.findOne({authUserId});
     if(!checkIfUserExist){
@@ -16,8 +16,13 @@ export const getAllWorkersForVerificationService = async(data:string)=>{
         throw new AppError("Unauthorized user",403);
     }
 
-    const fetchAllWorkers = await User.find({role:"Worker",workerApplicationStatus:"Pending"});
-    return fetchAllWorkers
+    const filter: any = { role: "Worker" };
+    if (status && status !== "All") {
+        filter.workerApplicationStatus = status;
+    }
+
+    const fetchAllWorkers = await User.find(filter);
+    return fetchAllWorkers;
 }
 
 export const getSingleWorkerForVerificationService = async(adminAuthUserId: string, workerId: string) => {

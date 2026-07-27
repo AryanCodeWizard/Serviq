@@ -170,7 +170,8 @@ export const getAllWorkersForVerification = async (req: Request, res: Response, 
         const authUserId = req.headers["userid"] as string;
         if (!authUserId) throw new AppError("Unable to fetch user Id", 400);
 
-        const verified = await getAllWorkersForVerificationService(authUserId);
+        const status = req.query.status as string;
+        const verified = await getAllWorkersForVerificationService(authUserId, status);
         res.status(200).json({
             success: true,
             message: "Here is the list of all workers",
@@ -186,6 +187,7 @@ export const getAllWorkersForVerification = async (req: Request, res: Response, 
         });
     }
 }
+
 
 export const getSingleWorkerForVerification = async (req: Request, res: Response, next: NextFunction) => {
     try {
