@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express"
+import mongoose from "mongoose";
 import { AppError } from "../utils/appError";
 import { UploadedFile } from "express-fileupload";
 import { createUserProfileService, getUserProfileDetails, updateProfileDetailsService, becomeWorkerService, addressUpdateService } from "../services/profile.service"
@@ -288,7 +289,6 @@ export const wokerVerfication = async (req: Request, res: Response, next: NextFu
     }
 }
 
-
 export const wokerVerficationReject = async (req: Request, res: Response, next: NextFunction) => {
     try {
 
@@ -319,6 +319,38 @@ export const wokerVerficationReject = async (req: Request, res: Response, next: 
         })
 
 
+    }
+    catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+}
+export const getWorkerDeatails = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const userId = req.body?.userId || (req.query?.userId as string) || req.params?.id;
+
+    if(!userId){
+        throw new AppError("Worker not found", 404);
+    }
+    const isObjectId = mongoose.Types.ObjectId.isValid(userId);
+    const workerDetails = await User.findOne({
+        $or: [
+            { authUserId: userId },
+            ...(isObjectId ? [{ _id: userId }] : [])
+        ]
+    });
+    if(!workerDetails){
+        throw new AppError("Worker not found", 404);
+    }
+
+    res.status(200).json({
+        success: true,
+        message:"Worker details fetched successfully",
+        data: workerDetails
+    });
     }
     catch (error: any) {
         console.log(error);
