@@ -3,10 +3,8 @@ import { AppError } from "../utils/appError";
 import axios from 'axios';
 import mongoose from 'mongoose';
 
-
-
 export const getAllWorkersForVerificationService = async(data: string, status?: string)=>{
-    const authUserId=data;
+    const authUserId = data;
     const checkIfUserExist = await User.findOne({authUserId});
     if(!checkIfUserExist){
         throw new AppError("User not registered with us",404);
@@ -70,3 +68,42 @@ export const becomeAdminService = async(data:string)=>{
     console.log(updateAuthServiceRole.data);
     return updatedUser;
 }
+
+export const wokerVerficationService = async(data:string) => {
+    const authUserId = data;
+    console.log("jfjnjfg",authUserId);
+
+    const worker = await User.findOne({authUserId:authUserId});
+    if(!worker){
+        throw new AppError("Worker with this id not found",404);
+    }
+
+    if(worker?.workerApplicationStatus === "Approved"){
+        throw new AppError("Worker status is already Approved",402);
+    }
+
+    const updateWorker = await User.findOneAndUpdate({authUserId:authUserId},{
+        workerApplicationStatus:"Approved"
+    },{returnDocument:"after"});
+
+    return updateWorker;
+}
+
+export const workerRejectVerificationService = async (authUserId: string) => {
+    const worker = await User.findOne({ authUserId });
+    if (!worker) {
+        throw new AppError("Worker with this ID not found", 404);
+    }
+
+    if (worker.workerApplicationStatus === "Rejected") {
+        throw new AppError("Worker status is already Rejected", 400); 
+    }
+
+    const updatedWorker = await User.findOneAndUpdate(
+        { authUserId },
+        { workerApplicationStatus: "Rejected" },
+        { new: true }
+    );
+
+    return updatedWorker;
+};
