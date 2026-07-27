@@ -8,10 +8,9 @@
     "outDir": "./dist",  //define where compiled code goes as ts cnverts all the code to js 
     "module": "commonjs",
     "target": "es6",
-    "types": ["node"],
-    
     "strict": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types","./src/types"]
     
   },
