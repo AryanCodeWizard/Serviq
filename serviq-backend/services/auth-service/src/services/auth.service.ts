@@ -55,7 +55,8 @@ export const signUpService = async (data: ISignUpData) => {
     
     const payload = {
         email: email,
-        userId: newUser._id
+        userId: newUser._id,
+        role: "User"
     }
 
     const accessToken = await jsonwebtoken.sign(payload, process.env.ACCESS_TOKEN_JWT_SECRET ?? "default_secret", { expiresIn: "10min" });
