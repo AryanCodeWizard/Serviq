@@ -14,9 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = __importDefault(require("./app"));
 const db_config_1 = require("./config/db.config");
+const rabbitMQ_config_1 = require("./config/rabbitMQ.config");
 const PORT = process.env.PORT;
 const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
-    (0, db_config_1.dbConnect)();
+    yield (0, db_config_1.dbConnect)();
+    yield (0, rabbitMQ_config_1.rabbitMQConnect)();
     app_1.default.listen(PORT, () => {
         console.log(`Booking service is successfully running on PORT ${PORT}`);
     });
