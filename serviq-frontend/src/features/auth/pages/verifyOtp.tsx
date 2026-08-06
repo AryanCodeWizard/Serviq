@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { signupOTPVerifyCall, signupMailSendAPICall } from "../services/auth";
-import { useDispatch } from "react-redux";
-import { setToken } from "../authSlice";
+import { buildAuthSession, signupOTPVerifyCall, signupMailSendAPICall } from "../services/auth";
+import { setSession } from "../authSlice";
 import { getErrorMessage } from "../../../utils/toast.utils";
+import { useAppDispatch } from "../../../app/hooks";
 
 const VerifyOtp = () => {
   const [otp, setOtp] = useState("");
@@ -12,9 +12,28 @@ const VerifyOtp = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const data = location.state;
+  const data = location.state as { fullName: string; email: string; password: string; confirmPassword: string } | null;
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+
+  if (!data) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-6 py-16">
+        <div className="max-w-md rounded-[2rem] border border-gray-200 bg-white p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.05)]">
+          <p className="text-lg font-semibold text-gray-950">Signup session missing</p>
+          <p className="mt-3 text-sm leading-6 text-gray-600">
+            Please start the signup flow again so we can verify your email.
+          </p>
+          <Link
+            to="/signup"
+            className="mt-6 inline-flex rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
+          >
+            Go to signup
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   const onSubmitHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,17 +50,13 @@ const VerifyOtp = () => {
         fullName: data.fullName,
         email: data.email,
         password: data.password,
-        role: data.role,
         otp,
       };
 
-      const response = await signupOTPVerifyCall(signUpData);
-      dispatch(setToken(response?.data?.accessToken));
-
-      if (response.success) {
-        toast.success(response.message || "Account created! Welcome aboard. 🎉");
-        navigate("/");
-      }
+      const authUser = await signupOTPVerifyCall(signUpData);
+      dispatch(setSession(buildAuthSession(authUser)));
+      toast.success("Account created! Welcome aboard. 🎉");
+      navigate("/dashboard");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Invalid OTP. Please try again."));
     } finally {
@@ -62,7 +77,6 @@ const VerifyOtp = () => {
         email: data.email,
         password: data.password,
         confirmPassword: data.confirmPassword,
-        role: data.role,
       };
       const response = await signupMailSendAPICall(resendData);
       toast.success(response.message || "OTP resent! Check your inbox. 📨");

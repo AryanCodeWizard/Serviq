@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { loginAPICall } from "../services/auth";
-import { useDispatch } from "react-redux";
-import { setToken } from "../authSlice";
+import { buildAuthSession, loginAPICall } from "../services/auth";
+import { setSession } from "../authSlice";
 import { getErrorMessage } from "../../../utils/toast.utils";
+import { useAppDispatch } from "../../../app/hooks";
 
 const LoginForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -43,11 +43,11 @@ const LoginForm = () => {
     try {
       setLoading(true);
 
-      const response = await loginAPICall(formData);
+      const authUser = await loginAPICall(formData);
 
-      dispatch(setToken(response?.data?.accessToken));
+      dispatch(setSession(buildAuthSession(authUser)));
       toast.success("Welcome back! You've logged in successfully. 🎉");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Login failed. Please check your credentials."));
     } finally {
