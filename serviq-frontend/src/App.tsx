@@ -2,13 +2,9 @@ import { RouterProvider } from "react-router-dom";
 import "./App.css";
 import { routes } from "./app/routes";
 import {Toaster} from 'react-hot-toast'
-import { useSelector } from "react-redux";
 
 
 function App() {
-const accessToken = useSelector((state:any) => state.auth.token);
-console.log(accessToken);
-
   return (
     <div className="min-h-screen w-full bg-[#F8F9FA] text-[#1A1A1A] antialiased">
       <RouterProvider router={routes} />

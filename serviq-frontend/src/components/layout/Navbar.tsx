@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import { clearAuth } from "../../features/auth/authSlice";
 import { logoutAPICall } from "../../features/auth/services/auth";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
-  const token = useSelector((state: any) => state.auth.token);
-  const dispatch = useDispatch();
+  const session = useAppSelector((state) => state.auth.session);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       setLogoutLoading(true);
-      await logoutAPICall(token);
+      await logoutAPICall(session?.accessToken);
     } catch (_) {
       // Even if the API call fails, we still clear local state
     } finally {
@@ -55,14 +55,17 @@ const Navbar = () => {
         {/* Desktop Nav Links */}
         <nav className="hidden items-center gap-8 md:flex">
           <NavLink to="/" end className={navLinkClass}>Home</NavLink>
-          {token && (
+          {session?.accessToken && (
+            <NavLink to="/bookings" className={navLinkClass}>Bookings</NavLink>
+          )}
+          {session?.accessToken && (
             <NavLink to="/dashboard" className={navLinkClass}>Dashboard</NavLink>
           )}
         </nav>
 
         {/* Desktop CTA */}
         <div className="hidden items-center gap-3 md:flex">
-          {token ? (
+          {session?.accessToken ? (
             <button
               onClick={handleLogout}
               disabled={logoutLoading}
@@ -134,8 +137,11 @@ const Navbar = () => {
             Home
           </NavLink>
 
-          {token ? (
+          {session?.accessToken ? (
             <>
+              <NavLink to="/bookings" onClick={() => setIsOpen(false)} className={activeMobileClass}>
+                Bookings
+              </NavLink>
               <NavLink to="/dashboard" onClick={() => setIsOpen(false)} className={activeMobileClass}>
                 Dashboard
               </NavLink>
