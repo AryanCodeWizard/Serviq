@@ -51,7 +51,7 @@ const authProxy = proxy("http://localhost:3001", {
             proxyReqOpts.headers["role"] = user.role;
         }
 
-        console.log("Auth Proxy -> User:", user);
+       console.log("Auth Proxy -> User:", user);
 
         return proxyReqOpts;
     },
@@ -65,9 +65,6 @@ const authProxy = proxy("http://localhost:3001", {
         });
     }
 });
-
-
-
 
 // ─── USER/PROFILE SERVICE PROXY (PORT 6000) ───────────────────────────
 const userServiceProxy = proxy("http://localhost:6000", {
@@ -89,7 +86,13 @@ const userServiceProxy = proxy("http://localhost:6000", {
         if (user?.role) {
             proxyReqOpts.headers["role"] = user.role;
         }
-        
+        //FOR TESTING
+        const userId = user.userID;
+        if(userId){
+            console.log(`Forwarding request to user service with userId ${userId}`);
+        }
+        //DONE
+
         console.log("USER id sent to User Service: ", user?.userId);
         return proxyReqOpts;
     },
@@ -104,6 +107,7 @@ const userServiceProxy = proxy("http://localhost:6000", {
 
 // ─── BOOKING SERVICE PROXY (PORT 7001) ────────────────────────────────
 const bookingServiceUrl = process.env.BOOKING_SERVICE_URL || "http://localhost:7001";
+
 const bookingServiceProxy = proxy(bookingServiceUrl, {
     proxyReqPathResolver: (req) => {
         return req.originalUrl.replace(/^\/api\/v1\/bookings?/, "");
