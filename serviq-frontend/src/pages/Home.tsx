@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 /* ─── Data ──────────────────────────────────────────────── */
 
@@ -85,6 +85,12 @@ const faqs = [
 /* ─── Component ─────────────────────────────────────────── */
 
 const Home = () => {
+  const navigate = useNavigate();
+
+  const handleServiceClick = (service: string) => {
+    navigate(`/bookings?category=${encodeURIComponent(service)}`);
+  };
+
   return (
     <main className="relative bg-white overflow-hidden">
       {/* Global subtle dot-grid pattern */}
@@ -183,19 +189,21 @@ const Home = () => {
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((s) => (
-              <div
+              <button
                 key={s.title}
-                className="group cursor-pointer rounded-2xl border border-gray-200 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]"
+                onClick={() => handleServiceClick(s.title)}
+                type="button"
+                className="group rounded-2xl border border-gray-200 bg-white p-7 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]"
               >
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-2xl transition group-hover:bg-black group-hover:text-white duration-300">
                   {s.icon}
                 </div>
                 <h3 className="text-lg font-bold text-black">{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">{s.desc}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-black opacity-0 transition group-hover:opacity-100 duration-200">
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-black transition group-hover:text-gray-900 duration-200">
                   Book now →
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>

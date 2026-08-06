@@ -45,3 +45,10 @@ export const getWorkerDetailsAPI = (userId: string, config?: AxiosRequestConfig)
         params: { userId },
     });
 };
+
+export const getWorkersByCategoryAPI = (serviceCategory?: string, config?: AxiosRequestConfig) => {
+    return api.get<ApiResponse<UserProfile[]>>("/users/workers", {
+        ...config,
+        params: serviceCategory ? { serviceCategory } : undefined,
+    });
+};

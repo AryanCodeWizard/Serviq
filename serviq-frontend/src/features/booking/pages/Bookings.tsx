@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type SubmitHandler, type Resolver } from "react-hook-form";
@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import { format } from "date-fns";
 import { createBookingAPICall, getCustomerBookingsAPICall, getWorkerBookingsAPICall } from "../services/booking";
-import { createProfileAPI, getProfileDetailsAPI, getWorkerDetailsAPI, type UserProfile } from "../../../api/user";
+import { createProfileAPI, getProfileDetailsAPI, getWorkersByCategoryAPI, type UserProfile } from "../../../api/user";
 import { useAppSelector } from "../../../app/hooks";
 import type { BookingPayload, BookingStatus } from "../../../types/booking";
 
@@ -28,15 +28,13 @@ interface BookingRecord {
     createdAt?: string;
 }
 
-const serviceOptions = [
-    "Deep Cleaning",
-    "Plumbing",
-    "Electrical",
-    "AC Repair",
-    "Carpentry",
-    "Painting",
-    "Pest Control",
-    "Appliance Repair",
+const serviceCategories = [
+    { label: "Deep Cleaning", description: "Full home & office cleaning with trained staff.", icon: "🧹" },
+    { label: "Plumbing", description: "Leak fixes, pipe work, and full plumbing repairs.", icon: "🔧" },
+    { label: "Electrical", description: "Wiring, fitting, and safety inspections.", icon: "⚡" },
+    { label: "AC Repair", description: "AC servicing, installation & gas refill.", icon: "❄️" },
+    { label: "Carpentry", description: "Furniture assembly, repair & custom woodwork.", icon: "🛋️" },
+    { label: "Beauty & Spa", description: "At-home salon services for men & women.", icon: "💅" },
 ];
 
 const bookingSchema = z.object({
@@ -63,6 +61,7 @@ const statusToneMap: Record<BookingStatus, string> = {
 
 const Bookings = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const session = useAppSelector((state) => state.auth.session);
     const role = session?.user.role ?? "User";
     const isWorker = role === "Worker";
@@ -70,16 +69,24 @@ const Bookings = () => {
     const [bookingsLoading, setBookingsLoading] = useState(true);
     const [bookingsError, setBookingsError] = useState<string | null>(null);
     const [selectedWorker, setSelectedWorker] = useState<UserProfile | null>(null);
-    const [workerLookupId, setWorkerLookupId] = useState("");
-    const [workerLookupLoading, setWorkerLookupLoading] = useState(false);
-    const [workerLookupError, setWorkerLookupError] = useState<string | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [categoryWorkers, setCategoryWorkers] = useState<UserProfile[]>([]);
+    const [categoryLoading, setCategoryLoading] = useState(false);
+    const [categoryError, setCategoryError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string>("all");
+
+    const queryCategory = new URLSearchParams(location.search).get("category");
+
+    useEffect(() => {
+        if (queryCategory) {
+            void handleSelectCategory(queryCategory);
+        }
+    }, [queryCategory]);
 
     const {
         register,
         handleSubmit,
         setValue,
-        watch,
         reset,
         formState: { errors, isSubmitting },
     } = useForm<BookingFormValues>({
@@ -96,8 +103,6 @@ const Bookings = () => {
             price: 0,
         },
     });
-
-    const selectedServices = watch("service");
 
     useEffect(() => {
         const abortController = new AbortController();
@@ -179,40 +184,41 @@ const Bookings = () => {
         completed: bookings.filter((booking) => booking.bookingStatus === "Completed").length,
     }), [bookings]);
 
-    const handleWorkerLookup = async () => {
-        if (!workerLookupId.trim()) {
-            setWorkerLookupError("Enter a worker auth ID or database ID.");
-            return;
-        }
+
+    const handleSelectCategory = async (category: string) => {
+        setSelectedCategory(category);
+        setSelectedWorker(null);
+        setCategoryWorkers([]);
+        setCategoryError(null);
+        setCategoryLoading(true);
+        setValue("service", [category], { shouldValidate: true });
 
         try {
-            setWorkerLookupLoading(true);
-            setWorkerLookupError(null);
-            const response = await getWorkerDetailsAPI(workerLookupId.trim());
-            const worker = response.data.data ?? null;
-            setSelectedWorker(worker);
-            if (worker?.authUserId || worker?._id) {
-                setValue("workerAuthId", worker.authUserId || worker._id || "");
+            const response = await getWorkersByCategoryAPI(category, { signal: new AbortController().signal });
+            const workers = response.data.data ?? [];
+            setCategoryWorkers(workers);
+
+            if (!workers.length) {
+                setCategoryError(`No verified workers available for ${category}.`);
+                return;
             }
-            if (worker?.phone) {
-                setValue("workerPhoneNumber", worker.phone);
-            }
-            toast.success("Worker loaded successfully");
+
+            const firstWorker = workers[0];
+            chooseWorker(firstWorker);
+            toast.success(`Ready to book ${category} with ${firstWorker.fullName}`);
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Worker not found";
-            setWorkerLookupError(message);
-            setSelectedWorker(null);
-            toast.error(message);
+            const message = error instanceof Error ? error.message : "Unable to fetch workers";
+            setCategoryError(message);
         } finally {
-            setWorkerLookupLoading(false);
+            setCategoryLoading(false);
         }
     };
 
-    const toggleService = (serviceName: string) => {
-        const nextServices = selectedServices.includes(serviceName)
-            ? selectedServices.filter((item) => item !== serviceName)
-            : [...selectedServices, serviceName];
-        setValue("service", nextServices, { shouldValidate: true });
+    const chooseWorker = (worker: UserProfile) => {
+        setSelectedWorker(worker);
+        setValue("workerAuthId", worker.authUserId || worker._id || "");
+        setValue("workerPhoneNumber", worker.phone || "");
+        toast.success(`Selected ${worker.fullName}`);
     };
 
     const submitBooking: SubmitHandler<BookingFormValues> = async (values) => {
@@ -248,7 +254,6 @@ const Bookings = () => {
         toast.success("Booking created successfully");
         reset();
         setSelectedWorker(null);
-        setWorkerLookupId("");
         const createdBookingId = response.data.data?._id;
         if (createdBookingId) {
             navigate(`/bookings/${createdBookingId}`);
@@ -303,73 +308,103 @@ const Bookings = () => {
                             </div>
 
                             <form onSubmit={handleSubmit(submitBooking)} className="mt-6 space-y-6">
-                                <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                                    <div>
-                                        <label className="mb-1.5 block text-sm font-medium text-gray-700">Worker Auth ID</label>
-                                        <input
-                                            value={workerLookupId}
-                                            onChange={(event) => setWorkerLookupId(event.target.value)}
-                                            placeholder="Paste worker auth ID or MongoDB ID"
-                                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/10"
-                                        />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleWorkerLookup}
-                                        disabled={workerLookupLoading}
-                                        className="mt-auto rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        {workerLookupLoading ? "Loading..." : "Load worker"}
-                                    </button>
-                                </div>
-                                {workerLookupError && <p className="text-sm text-rose-600">{workerLookupError}</p>}
-
-                                {selectedWorker ? (
+                                <div className="space-y-6">
                                     <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
-                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                            <div>
-                                                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Selected Worker</p>
-                                                <h3 className="mt-1 text-xl font-semibold text-gray-950">{selectedWorker.fullName}</h3>
-                                                <p className="text-sm text-gray-500">{selectedWorker.email}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">{selectedWorker.role}</span>
-                                                <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">{selectedWorker.workerApplicationStatus ?? "Pending"}</span>
-                                            </div>
-                                        </div>
-
+                                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Book by category</p>
                                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                            <MiniInfo label="Phone" value={selectedWorker.phone ?? "Not provided"} />
-                                            <MiniInfo label="Services" value={selectedWorker.serviceCategory?.join(", ") || "Not listed"} />
-                                            <MiniInfo label="Availability" value={selectedWorker.isAvailable ? "Available" : "Unavailable"} />
-                                            <MiniInfo label="Rating" value={`${selectedWorker.averageRating?.toFixed(1) ?? "0.0"} / 5`} />
+                                            {serviceCategories.map((category) => (
+                                                <button
+                                                    key={category.label}
+                                                    type="button"
+                                                    onClick={() => void handleSelectCategory(category.label)}
+                                                    className={`group rounded-3xl border px-4 py-4 text-left transition ${selectedCategory === category.label ? "border-black bg-black text-white" : "border-gray-200 bg-white text-gray-900 hover:border-black"}`}
+                                                >
+                                                    <div className="text-2xl">{category.icon}</div>
+                                                    <h3 className="mt-3 text-base font-semibold">{category.label}</h3>
+                                                    <p className="mt-2 text-sm leading-6 text-gray-500 group-hover:text-white/85">{category.description}</p>
+                                                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold">
+                                                        Book now <span className="text-lg">→</span>
+                                                    </span>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-5 py-6 text-sm text-gray-600">
-                                        Load a worker to autofill worker details and continue.
-                                    </div>
-                                )}
 
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-gray-700">Services</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {serviceOptions.map((service) => {
-                                            const active = selectedServices.includes(service);
-                                            return (
-                                                <button
-                                                    key={service}
-                                                    type="button"
-                                                    onClick={() => toggleService(service)}
-                                                    className={`rounded-full border px-4 py-2 text-sm font-medium transition ${active ? "border-black bg-black text-white" : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"}`}
-                                                >
-                                                    {service}
-                                                </button>
-                                            );
-                                        })}
+                                    {selectedCategory ? (
+                                        <div className="rounded-3xl border border-gray-200 bg-white p-5">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div>
+                                                    <h3 className="text-lg font-semibold text-gray-950">{selectedCategory} workers</h3>
+                                                    <p className="mt-1 text-sm text-gray-500">Choose an available professional for this service.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 space-y-3">
+                                                {categoryLoading ? (
+                                                    <div className="space-y-3">
+                                                        <div className="h-20 animate-pulse rounded-2xl bg-gray-100" />
+                                                        <div className="h-20 animate-pulse rounded-2xl bg-gray-100" />
+                                                    </div>
+                                                ) : categoryError ? (
+                                                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{categoryError}</div>
+                                                ) : categoryWorkers.length > 0 ? (
+                                                    categoryWorkers.map((worker) => (
+                                                        <button
+                                                            key={worker.authUserId || worker._id}
+                                                            type="button"
+                                                            onClick={() => chooseWorker(worker)}
+                                                            className={`w-full rounded-3xl border p-4 text-left transition ${selectedWorker?.authUserId === worker.authUserId ? "border-black bg-black text-white" : "border-gray-200 bg-white hover:border-black"}`}
+                                                        >
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <div>
+                                                                    <h4 className="text-base font-semibold">{worker.fullName}</h4>
+                                                                    <p className="mt-1 text-sm text-gray-500">{worker.serviceCategory?.join(", ") || "No categories"}</p>
+                                                                </div>
+                                                                <span className="text-sm text-gray-500">{worker.isAvailable ? "Available" : "Offline"}</span>
+                                                            </div>
+                                                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+                                                                {worker.phone && <span className="rounded-full bg-gray-100 px-2.5 py-1">{worker.phone}</span>}
+                                                                <span className="rounded-full bg-gray-100 px-2.5 py-1">{worker.averageRating?.toFixed(1) ?? "0.0"} ★</span>
+                                                            </div>
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">No available workers found for this service yet.</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {selectedWorker ? (
+                                        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
+                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                <div>
+                                                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Selected Worker</p>
+                                                    <h3 className="mt-1 text-xl font-semibold text-gray-950">{selectedWorker.fullName}</h3>
+                                                    <p className="text-sm text-gray-500">{selectedWorker.email}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">{selectedWorker.role}</span>
+                                                    <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">{selectedWorker.workerApplicationStatus ?? "Pending"}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                                <MiniInfo label="Phone" value={selectedWorker.phone ?? "Not provided"} />
+                                                <MiniInfo label="Services" value={selectedWorker.serviceCategory?.join(", ") || "Not listed"} />
+                                                <MiniInfo label="Availability" value={selectedWorker.isAvailable ? "Available" : "Unavailable"} />
+                                            </div>
+                                        </div>
+                                    ) : selectedCategory ? (
+                                        <div className="rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-5 py-6 text-sm text-gray-600">
+                                            Select a worker from the list above to continue.
+                                        </div>
+                                    ) : null}
+
+                                    <div className="rounded-3xl border border-gray-200 bg-white p-5">
+                                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Booking details</p>
+                                        <p className="mt-1 text-sm text-gray-500">Fill in the schedule and contact details below.</p>
                                     </div>
-                                    {errors.service && <p className="mt-2 text-sm text-rose-600">{errors.service.message}</p>}
-                                </div>
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <Field label="Booking Date" error={errors.bookingDate?.message}>
@@ -378,15 +413,12 @@ const Bookings = () => {
                                     <Field label="Booking Time" error={errors.bookingTime?.message}>
                                         <input type="time" {...register("bookingTime")} className="input" />
                                     </Field>
-                                    <Field label="Customer Phone" error={errors.customerPhoneNumber?.message}>
-                                        <input placeholder="Customer phone number" {...register("customerPhoneNumber")} className="input" />
-                                    </Field>
-                                    <Field label="Worker Phone" error={errors.workerPhoneNumber?.message}>
-                                        <input placeholder="Worker phone number" {...register("workerPhoneNumber")} className="input" />
+                                    <Field label="Phone" error={errors.customerPhoneNumber?.message}>
+                                        <input placeholder="Enter your phone" {...register("customerPhoneNumber")} className="input" />
                                     </Field>
                                 </div>
 
-                                <Field label="Customer Address" error={errors.customerAddress?.message}>
+                                <Field label="Service address" error={errors.customerAddress?.message}>
                                     <textarea rows={3} placeholder="Enter the service address" {...register("customerAddress")} className="input" />
                                 </Field>
 
@@ -405,6 +437,7 @@ const Bookings = () => {
                                 >
                                     {isSubmitting ? "Creating booking..." : "Create booking"}
                                 </button>
+                            </div>
                             </form>
                         </section>
                     ) : (
@@ -483,17 +516,6 @@ const Bookings = () => {
                                 )}
                             </div>
                         </section>
-
-                        {!isWorker && (
-                            <section className="rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
-                                <h2 className="text-xl font-semibold text-gray-950">Booking guide</h2>
-                                <ol className="mt-4 space-y-3 text-sm text-gray-600">
-                                    <li className="rounded-2xl bg-gray-50 px-4 py-3">1. Load the worker by auth ID or database ID.</li>
-                                    <li className="rounded-2xl bg-gray-50 px-4 py-3">2. Pick one or more services and fill in the schedule.</li>
-                                    <li className="rounded-2xl bg-gray-50 px-4 py-3">3. Submit to create a pending booking and jump to its detail view.</li>
-                                </ol>
-                            </section>
-                        )}
                     </aside>
                 </div>
             </section>
