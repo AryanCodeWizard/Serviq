@@ -23,6 +23,54 @@ export const getAllWorkersForVerificationService = async(data: string, status?: 
     return fetchAllWorkers;
 }
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const normalizeCategoryFilter = (serviceCategory: string) => {
+    const normalized = serviceCategory.trim().toLowerCase();
+
+    if (/deep\s*clean|cleaning/.test(normalized)) {
+        return /cleaning/i;
+    }
+
+    if (/\bac\b|air\s*conditioning|ac\s*repair/.test(normalized)) {
+        return /ac|air\s*conditioning|airconditioning/i;
+    }
+
+    if (/beauty|spa/.test(normalized)) {
+        return /beauty|spa/i;
+    }
+
+    if (/plumbing/.test(normalized)) {
+        return /plumbing/i;
+    }
+
+    if (/electrical/.test(normalized)) {
+        return /electrical/i;
+    }
+
+    if (/carpentry/.test(normalized)) {
+        return /carpentry/i;
+    }
+
+    return new RegExp(`^${escapeRegExp(normalized)}$`, "i");
+};
+
+export const getAvailableWorkersByCategoryService = async(serviceCategory?: string) => {
+    const filter: any = {
+        role: "Worker",
+        isVerifiedWorker: true,
+        workerApplicationStatus: "Approved",
+        isAvailable: true,
+    };
+
+    if (serviceCategory) {
+        filter.serviceCategory = { $elemMatch: { $regex: normalizeCategoryFilter(serviceCategory) } };
+    }
+
+    const workers = await User.find(filter);
+    return workers;
+}
+
 export const getSingleWorkerForVerificationService = async(adminAuthUserId: string, workerId: string) => {
     const checkIfUserExist = await User.findOne({ authUserId: adminAuthUserId });
     if (!checkIfUserExist) {

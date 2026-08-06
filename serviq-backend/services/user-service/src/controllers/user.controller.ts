@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { AppError } from "../utils/appError";
 import { UploadedFile } from "express-fileupload";
 import { createUserProfileService, getUserProfileDetails, updateProfileDetailsService, becomeWorkerService, addressUpdateService } from "../services/profile.service"
-import { getAllWorkersForVerificationService, becomeAdminService, getSingleWorkerForVerificationService, wokerVerficationService, workerRejectVerificationService } from "../services/profileAdmin.service"
+import { getAllWorkersForVerificationService, getAvailableWorkersByCategoryService, becomeAdminService, getSingleWorkerForVerificationService, wokerVerficationService, workerRejectVerificationService } from "../services/profileAdmin.service"
 import User from "../models/user.model";
 
 export const createUserProfile = async (req: Request, res: Response) => {
@@ -328,6 +328,26 @@ export const wokerVerficationReject = async (req: Request, res: Response, next: 
         });
     }
 }
+
+export const getWorkersByCategory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const serviceCategory = req.query.serviceCategory as string | undefined;
+        const workers = await getAvailableWorkersByCategoryService(serviceCategory);
+
+        res.status(200).json({
+            success: true,
+            message: "Workers fetched successfully",
+            data: workers,
+        });
+    } catch (error: any) {
+        console.log(error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+};
+
 export const getWorkerDeatails = async (req: Request, res: Response, next: NextFunction) => {
     try{
         const userId = req.body?.userId || (req.query?.userId as string) || req.params?.id;

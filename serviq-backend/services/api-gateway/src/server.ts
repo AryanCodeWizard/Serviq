@@ -3,6 +3,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import proxy from 'express-http-proxy';
 import { authMiddleware } from './middlewares/auth.middleware';
+import { AppError } from './utils/appError';
 import cookieParser from 'cookie-parser';
 import { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -17,6 +18,8 @@ app.use(cookieParser());
 app.use(cors({
     origin: "http://localhost:5173",
     credentials: true,              // Required: allow cookies to be sent cross-origin
+    allowedHeaders: ["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+    exposedHeaders: ["Authorization"],
 }));
 
 // Logger
@@ -153,6 +156,30 @@ app.use("/api/v1/users", authMiddleware, userServiceProxy);
 // 4. Booking Service Routes
 app.use("/api/v1/booking", authMiddleware, bookingServiceProxy);
 app.use("/api/v1/bookings", authMiddleware, bookingServiceProxy);
+
+// ─── ERROR HANDLING ─────────────────────────────────────────────────
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error("Gateway Error:", err);
+
+    if (err instanceof AppError) {
+        return res.status(err.statusCode).json({
+            success: false,
+            message: err.message,
+        });
+    }
+
+    if (err?.name === "JsonWebTokenError" || err?.name === "TokenExpiredError") {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired token",
+        });
+    }
+
+    res.status(err?.statusCode || 500).json({
+        success: false,
+        message: err?.message || "Internal server error",
+    });
+});
 
 // ─── APP INITIALIZATION ───────────────────────────────────────────────
 app.listen(PORT, () => {
