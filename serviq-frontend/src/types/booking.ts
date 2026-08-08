@@ -4,13 +4,13 @@ export type PaymentStatus = "Pending" | "Paid" | "Refunded";
 
 export interface BookingPayload {
     customerAuthId: string;
-    workerAuthId: string;
+    workerAuthId?: string;
     service: string | string[];
     bookingDate: string;
     bookingTime: string;
     customerAddress: string;
     customerPhoneNumber: string;
-    workerPhoneNumber: string;
+    workerPhoneNumber?: string;
     problemDescription?: string;
     price: number;
     otp?: string;
