@@ -31,6 +31,15 @@ const resolveCustomerProfileEndpoint = () => {
         : `${userServiceUrl}/get-profile-details`;
 };
 
+const resolveWorkersByCategoryEndpoint = (serviceCategory: string) => {
+    const userServiceUrl = (process.env.USER_SERVICE_URL || "http://localhost:6000").replace(/\/$/, "");
+    const encodedCategory = encodeURIComponent(serviceCategory);
+
+    return userServiceUrl.includes("3000")
+        ? `${userServiceUrl}/api/v1/users/workers?serviceCategory=${encodedCategory}`
+        : `${userServiceUrl}/workers?serviceCategory=${encodedCategory}`;
+};
+
 const buildBookingMailBody = (title: string, recipientName: string, booking: any) => {
     const serviceList = Array.isArray(booking.service) ? booking.service.join(", ") : booking.service;
 
@@ -102,51 +111,158 @@ const validateBookingOwnership = (booking: any, actorAuthId: string, actorRole: 
     }
 };
 
+const getPreferredServiceCategory = (service: string[] | undefined) => {
+    if (!service || service.length === 0) {
+        return "";
+    }
+
+    return service[0];
+};
+
+const buildBookingSlotKey = (bookingDate: string, bookingTime: string) => {
+    return `${bookingDate.trim()}::${bookingTime.trim()}`.toLowerCase();
+};
+
+const assignWorkerForBooking = async (service: string[] | undefined, bookingDate: string, bookingTime: string, requestedWorkerAuthId?: string) => {
+    const preferredCategory = getPreferredServiceCategory(service);
+
+    if (requestedWorkerAuthId) {
+        try {
+            const workerResponse = await axios.get(resolveUserServiceEndpoint(), {
+                params: { userId: requestedWorkerAuthId }
+            });
+            const worker = workerResponse?.data?.data;
+
+            if (!worker) {
+                throw new AppError("Worker not found", 404);
+            }
+
+            if (!worker.isVerifiedWorker) {
+                throw new AppError("Worker is not verified", 403);
+            }
+            if (worker.isBlocked) {
+                throw new AppError("Worker is blocked", 403);
+            }
+            if (!worker.isAvailable) {
+                throw new AppError("Worker is not available to serve", 403);
+            }
+            if (worker.workerApplicationStatus !== "Approved") {
+                throw new AppError("Worker application status is not approved", 403);
+            }
+
+            const existingBooking = await Booking.findOne({
+                workerAuthId: worker.authUserId || worker._id,
+                slotKey: buildBookingSlotKey(bookingDate, bookingTime),
+                bookingStatus: { $nin: ["Cancelled", "Completed"] },
+            });
+
+            if (existingBooking) {
+                throw new AppError("The selected worker is already booked for that slot", 409);
+            }
+
+            return {
+                workerAuthId: worker.authUserId || worker._id,
+                workerPhoneNumber: worker.phone || "",
+                worker,
+            };
+        } catch (error: any) {
+            if (error instanceof AppError) {
+                throw error;
+            }
+
+            const status = error.response?.status || 500;
+            const message = error.response?.data?.message || "Failed to fetch worker details or worker service unavailable";
+            throw new AppError(message, status);
+        }
+    }
+
+    if (!preferredCategory) {
+        throw new AppError("Service category is required to assign a worker", 400);
+    }
+
+    try {
+        const workerResponse = await axios.get(resolveWorkersByCategoryEndpoint(preferredCategory));
+        const workers = Array.isArray(workerResponse?.data?.data) ? workerResponse.data.data : [];
+
+        if (!workers.length) {
+            throw new AppError("No workers available for the selected service", 404);
+        }
+
+        const eligibleWorkers = await Promise.all(
+            workers.map(async (worker: any) => {
+                const workerAuthId = worker.authUserId || worker._id;
+                if (!workerAuthId) {
+                    return null;
+                }
+
+                if (!worker.isVerifiedWorker || worker.isBlocked || !worker.isAvailable || worker.workerApplicationStatus !== "Approved") {
+                    return null;
+                }
+
+                const conflictingBooking = await Booking.findOne({
+                    workerAuthId,
+                    slotKey: buildBookingSlotKey(bookingDate, bookingTime),
+                    bookingStatus: { $nin: ["Cancelled", "Completed"] },
+                });
+
+                if (conflictingBooking) {
+                    return null;
+                }
+
+                const bookingCount = await Booking.countDocuments({
+                    workerAuthId,
+                    bookingStatus: { $nin: ["Cancelled", "Completed"] },
+                });
+
+                return {
+                    workerAuthId,
+                    workerPhoneNumber: worker.phone || "",
+                    worker,
+                    bookingCount,
+                };
+            })
+        );
+
+        const availableWorkers = eligibleWorkers.filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
+
+        if (!availableWorkers.length) {
+            throw new AppError("No workers available for the selected date and time", 409);
+        }
+
+        availableWorkers.sort((a, b) => (a.bookingCount ?? 0) - (b.bookingCount ?? 0));
+        availableWorkers.sort((a, b) => (a.bookingCount ?? 0) - (b.bookingCount ?? 0) || (Number(b.worker?.averageRating || 0) - Number(a.worker?.averageRating || 0)));
+
+        return availableWorkers[0];
+    } catch (error: any) {
+        if (error instanceof AppError) {
+            throw error;
+        }
+
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || "Failed to fetch worker availability";
+        throw new AppError(message, status);
+    }
+};
+
 export const createBookingService = async (data: IBookingData) => {
     const { customerAuthId, workerAuthId, service, bookingDate, bookingTime, customerAddress, customerPhoneNumber, price, problemDescription, workerPhoneNumber } = data;
 
     const sameBookingCheck = await Booking.find({
-        customerAuthId: customerAuthId,
-        workerAuthId: workerAuthId,
+        customerAuthId,
         service: { $all: service },
-        bookingStatus: "Pending"
+        bookingDate,
+        bookingTime,
+        bookingStatus: { $in: ["Pending", "Accepted", "In Progress"] }
     });
     if (sameBookingCheck.length > 0) {
-        throw new AppError("Booking for same service already booked", 400);
+        throw new AppError("Booking for the same service at the selected slot already exists", 400);
     }
 
-    // Get worker details from user service
-    let workerResponse;
-    try {
-        workerResponse = await axios.get(resolveUserServiceEndpoint(), {
-            params: { userId: workerAuthId }
-        });
-    } catch (err: any) {
-        console.error("Axios Error Details:", err.response?.data || err.message);
-        const status = err.response?.status || 500;
-        const message = err.response?.data?.message || "Failed to fetch worker details or worker service unavailable";
-        throw new AppError(message, status);
-    }
-
-
-    const worker = workerResponse?.data?.data;
-    if (!worker) {
-        throw new AppError("Worker not found", 404);
-    }
-
-    // Verify worker eligibility
-    if (!worker.isVerifiedWorker) {
-        throw new AppError("Worker is not verified", 403);
-    }
-    if (worker.isBlocked) {
-        throw new AppError("Worker is blocked", 403);
-    }
-    if (!worker.isAvailable) {
-        throw new AppError("Worker is not available to serve", 403);
-    }
-    if (worker.workerApplicationStatus !== "Approved") {
-        throw new AppError("Worker application status is not approved", 403);
-    }
+    const assignedWorker = await assignWorkerForBooking(service, bookingDate, bookingTime, workerAuthId);
+    const workerAuthIdToAssign = assignedWorker.workerAuthId;
+    const slotKey = buildBookingSlotKey(bookingDate, bookingTime);
+    const assignedWorkerName = assignedWorker.worker?.fullName || assignedWorker.worker?.name || "";
+    const assignedWorkerEmail = assignedWorker.worker?.email || "";
 
     // Generate 4-digit OTP for booking verification
     const otp = data.otp || crypto.randomInt(1000, 10000).toString();
@@ -154,16 +270,19 @@ export const createBookingService = async (data: IBookingData) => {
     // Generate new booking
     const newBooking = await Booking.create({
         customerAuthId,
-        workerAuthId,
+        workerAuthId: workerAuthIdToAssign,
         service,
         bookingDate,
         bookingTime,
         customerAddress,
         customerPhoneNumber,
-        workerPhoneNumber,
+        workerPhoneNumber: workerPhoneNumber || assignedWorker.workerPhoneNumber || "",
         problemDescription,
         price,
         otp,
+        slotKey,
+        assignedWorkerName,
+        assignedWorkerEmail,
     });
 
     void dispatchBookingEmails(newBooking);
