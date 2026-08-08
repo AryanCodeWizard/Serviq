@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import BookingFlowModal from "../components/booking/BookingFlowModal";
+import { homeServices, type ServiceOption } from "../utils/serviceCatalog";
 
 /* ─── Data ──────────────────────────────────────────────── */
 
@@ -9,14 +12,7 @@ const stats = [
   { value: "200+", label: "Cities Covered" },
 ];
 
-const services = [
-  { icon: "🧹", title: "Deep Cleaning", desc: "Full home & office cleaning with trained staff." },
-  { icon: "🔧", title: "Plumbing", desc: "Leak fixes, pipe work, and full plumbing repairs." },
-  { icon: "⚡", title: "Electrical", desc: "Wiring, fitting, and safety inspections." },
-  { icon: "❄️", title: "AC Repair", desc: "AC servicing, installation & gas refill." },
-  { icon: "🛋️", title: "Carpentry", desc: "Furniture assembly, repair & custom woodwork." },
-  { icon: "💅", title: "Beauty & Spa", desc: "At-home salon services for men & women." },
-];
+const services = homeServices;
 
 const steps = [
   {
@@ -85,10 +81,17 @@ const faqs = [
 /* ─── Component ─────────────────────────────────────────── */
 
 const Home = () => {
-  const navigate = useNavigate();
+  const [selectedService, setSelectedService] = useState<ServiceOption | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const handleServiceClick = (service: string) => {
-    navigate(`/bookings?category=${encodeURIComponent(service)}`);
+  const filteredServices = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return services;
+    return services.filter((service) => `${service.label} ${service.description}`.toLowerCase().includes(term));
+  }, [searchTerm]);
+
+  const handleServiceClick = (service: ServiceOption) => {
+    setSelectedService(service);
   };
 
   return (
@@ -131,17 +134,18 @@ const Home = () => {
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
-              <Link
-                to="/signup"
+              <button
+                type="button"
+                onClick={() => setSelectedService(services[0])}
                 className="rounded-full bg-black px-8 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-gray-800 hover:shadow-xl active:scale-[0.98]"
               >
-                Get Started — It's Free
-              </Link>
+                Book a Service
+              </button>
               <Link
-                to="/login"
+                to="/bookings"
                 className="flex items-center gap-2 rounded-full border border-gray-200 px-8 py-3.5 text-base font-semibold text-gray-700 transition hover:bg-gray-50 hover:shadow-md"
               >
-                Log in →
+                My Bookings →
               </Link>
             </div>
 
@@ -156,19 +160,32 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Right – floating stat cards */}
-          <div className="relative grid grid-cols-2 gap-4">
-            {stats.map((s, i) => (
-              <div
-                key={s.label}
-                className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.1)] duration-300 ${
-                  i === 1 ? "mt-6" : i === 3 ? "-mt-6" : ""
-                }`}
-              >
-                <p className="text-3xl font-extrabold text-black">{s.value}</p>
-                <p className="mt-1 text-sm font-medium text-gray-400">{s.label}</p>
+          {/* Right – visual showcase */}
+          <div className="relative">
+            <div className="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+              <img
+                src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1400&q=80"
+                alt="A professional helping a happy home owner"
+                className="h-80 w-full object-cover"
+              />
+              <div className="p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-gray-400">Live booking experience</p>
+                    <h3 className="mt-2 text-xl font-semibold text-black">Fast, friendly, and fully verified</h3>
+                  </div>
+                  <span className="rounded-full bg-black px-3 py-1 text-sm font-semibold text-white">24/7</span>
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {stats.map((s) => (
+                    <div key={s.label} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                      <p className="text-2xl font-extrabold text-black">{s.value}</p>
+                      <p className="mt-1 text-sm font-medium text-gray-500">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
@@ -176,33 +193,53 @@ const Home = () => {
       {/* ── SERVICES ─────────────────────────────────────── */}
       <section className="bg-gray-50 py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          {/* Section header */}
-          <div className="mb-14 text-center">
-            <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">What we offer</span>
-            <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-black lg:text-5xl">
-              Services at your doorstep
-            </h2>
-            <p className="mt-4 text-gray-500 text-lg max-w-xl mx-auto">
-              50+ categories of home services, all delivered by trained & verified professionals.
-            </p>
+          <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">Services for your home</span>
+              <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-black lg:text-5xl">
+                Trusted help for everyday chores
+              </h2>
+              <p className="mt-4 text-lg text-gray-500">
+                Browse popular household services, then book in minutes with automatic professional assignment.
+              </p>
+            </div>
+            <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm">
+              Verified professionals • Transparent pricing
+            </div>
+          </div>
+
+          <div className="mb-6 rounded-[24px] border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
+            <input
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search services"
+              className="w-full rounded-[16px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-black"
+            />
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((s) => (
+            {filteredServices.map((service) => (
               <button
-                key={s.title}
-                onClick={() => handleServiceClick(s.title)}
+                key={service.label}
+                onClick={() => handleServiceClick(service)}
                 type="button"
-                className="group rounded-2xl border border-gray-200 bg-white p-7 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]"
+                className="group overflow-hidden rounded-[24px] border border-gray-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)]"
               >
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-2xl transition group-hover:bg-black group-hover:text-white duration-300">
-                  {s.icon}
+                <img src={service.image} alt={service.label} className="h-40 w-full object-cover" loading="lazy" />
+                <div className="p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
+                    {service.icon}
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-black">{service.label}</h3>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{service.duration}</span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-500">{service.description}</p>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-900">From ₹{service.price}</span>
+                    <span className="text-sm font-semibold text-black">Book →</span>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-black">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-gray-500">{s.desc}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-black transition group-hover:text-gray-900 duration-200">
-                  Book now →
-                </span>
               </button>
             ))}
           </div>
@@ -238,6 +275,39 @@ const Home = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── VIDEO SHOWCASE ─────────────────────────────── */}
+      <section className="bg-white py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">See ServiQ in action</span>
+              <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-black lg:text-5xl">
+                A polished booking flow built for modern homes
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-gray-500">
+                From discovery to doorstep delivery, every step feels smooth, visual, and trustworthy.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <span className="rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600">Instant booking</span>
+                <span className="rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600">Verified professionals</span>
+                <span className="rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600">Flexible schedules</span>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-[2rem] border border-gray-200 bg-gray-50 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+              <div className="aspect-video w-full">
+                <iframe
+                  className="h-full w-full"
+                  src="https://www.youtube.com/embed/ScMzIvxBSi4?rel=0"
+                  title="ServiQ service experience"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -308,6 +378,8 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      <BookingFlowModal isOpen={Boolean(selectedService)} onClose={() => setSelectedService(null)} service={selectedService} />
 
       {/* ── CTA BANNER ───────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-6 pb-24 lg:px-8">
