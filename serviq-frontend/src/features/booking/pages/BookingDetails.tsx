@@ -19,6 +19,8 @@ interface BookingRecord {
     problemDescription: string;
     customerPhoneNumber: string;
     workerPhoneNumber: string;
+    assignedWorkerName?: string;
+    assignedWorkerEmail?: string;
     rejectReason?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -78,6 +80,23 @@ const BookingDetails = () => {
         ];
     }, [booking?.bookingStatus]);
 
+    const statusMessage = useMemo(() => {
+        switch (booking?.bookingStatus) {
+            case "Pending":
+                return "Your booking is awaiting confirmation from the assigned professional.";
+            case "Accepted":
+                return "The professional has accepted your request and is preparing for the visit.";
+            case "In Progress":
+                return "The service is currently underway.";
+            case "Completed":
+                return "The service has been completed successfully.";
+            case "Cancelled":
+                return "This booking was cancelled.";
+            default:
+                return "Your booking request is being processed.";
+        }
+    }, [booking?.bookingStatus]);
+
     const handleAction = async (bookingStatus: BookingStatus, rejectReason?: string) => {
         if (!bookingId) {
             return;
@@ -133,6 +152,18 @@ const BookingDetails = () => {
                     </div>
                 </div>
 
+                <div className="mt-6 rounded-3xl border border-gray-200 bg-gray-50 p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">Booking confirmation</p>
+                            <p className="mt-2 text-sm leading-7 text-gray-600">{statusMessage}</p>
+                        </div>
+                        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700">
+                            {booking.bookingDate ? format(new Date(booking.bookingDate), "dd MMM yyyy") : "Scheduled soon"} • {booking.bookingTime}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                     <section className="rounded-3xl border border-gray-200 bg-gray-50 p-5">
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -142,6 +173,12 @@ const BookingDetails = () => {
                             <Info label="Payment method" value={booking.paymentMethod} />
                             <Info label="Customer phone" value={booking.customerPhoneNumber} />
                             <Info label="Worker phone" value={booking.workerPhoneNumber} />
+                        </div>
+
+                        <div className="mt-5 rounded-3xl border border-gray-200 bg-white p-5">
+                            <h2 className="text-lg font-semibold text-gray-950">Assigned professional</h2>
+                            <p className="mt-2 text-sm font-semibold text-gray-950">{booking.assignedWorkerName || "Awaiting assignment"}</p>
+                            <p className="mt-1 text-sm text-gray-600">{booking.assignedWorkerEmail || "The system is still assigning the best available professional."}</p>
                         </div>
 
                         <div className="mt-5 rounded-3xl border border-gray-200 bg-white p-5">
