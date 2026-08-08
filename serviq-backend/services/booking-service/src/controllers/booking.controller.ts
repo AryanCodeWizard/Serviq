@@ -21,8 +21,8 @@ const readHeaderValue = (value: string | string[] | undefined) => {
 export const createBooking = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const {
-            customerAuthId, workerAuthId, service, bookingDate, bookingTime, 
-            customerAddress, customerPhoneNumber, workerPhoneNumber, problemDescription, 
+            customerAuthId, workerAuthId, service, bookingDate, bookingTime,
+            customerAddress, customerPhoneNumber, workerPhoneNumber, problemDescription,
             price
         } = req.body;
 
@@ -30,14 +30,14 @@ export const createBooking = async (req: Request, res: Response, next: NextFunct
         const resolvedCustomerAuthId = authUserId || customerAuthId;
 
         // 1. Check Mandatory Fields
-        if (!resolvedCustomerAuthId || !workerAuthId || !service || !bookingDate || !bookingTime || !customerAddress || !customerPhoneNumber || price === undefined || price === null || !workerPhoneNumber) {
+        if (!resolvedCustomerAuthId || !service || !bookingDate || !bookingTime || !customerAddress || !customerPhoneNumber || price === undefined || price === null) {
             return res.status(400).json({ success: false, message: "Missing required fields." });
         }
 
         // 2. Group data safely for your database
         const cleanBookingData: IBookingData = {
             customerAuthId: resolvedCustomerAuthId,
-            workerAuthId,
+            workerAuthId: workerAuthId || undefined,
             service: Array.isArray(service) ? service : [service],
             bookingDate,
             bookingTime,
