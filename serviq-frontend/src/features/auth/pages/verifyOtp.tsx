@@ -1,10 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { buildAuthSession, signupOTPVerifyCall, signupMailSendAPICall } from "../services/auth";
+import {
+  buildAuthSession,
+  signupOTPVerifyCall,
+  signupMailSendAPICall,
+} from "../services/auth";
 import { setSession } from "../authSlice";
 import { getErrorMessage } from "../../../utils/toast.utils";
 import { useAppDispatch } from "../../../app/hooks";
+import AuthPageShell from "../../../components/layout/AuthPageShell";
 
 const VerifyOtp = () => {
   const [otp, setOtp] = useState("");
@@ -12,21 +17,30 @@ const VerifyOtp = () => {
   const [resendLoading, setResendLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const data = location.state as { fullName: string; email: string; password: string; confirmPassword: string } | null;
+  const data = location.state as
+    | {
+        fullName: string;
+        email: string;
+        password: string;
+        confirmPassword: string;
+      }
+    | null;
 
   const dispatch = useAppDispatch();
 
   if (!data) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6 py-16">
-        <div className="max-w-md rounded-[2rem] border border-gray-200 bg-white p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.05)]">
-          <p className="text-lg font-semibold text-gray-950">Signup session missing</p>
-          <p className="mt-3 text-sm leading-6 text-gray-600">
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-16 text-gray-900 antialiased">
+        <div className="max-w-md rounded-[2rem] border border-gray-200 bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+          <p className="text-lg font-bold text-black">
+            Signup session missing
+          </p>
+          <p className="mt-3 text-sm leading-6 text-gray-500">
             Please start the signup flow again so we can verify your email.
           </p>
           <Link
             to="/signup"
-            className="mt-6 inline-flex rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
+            className="mt-6 inline-flex rounded-full bg-black px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 active:scale-[0.98]"
           >
             Go to signup
           </Link>
@@ -81,138 +95,147 @@ const VerifyOtp = () => {
       const response = await signupMailSendAPICall(resendData);
       toast.success(response.message || "OTP resent! Check your inbox. 📨");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Failed to resend OTP. Please try again."));
+      toast.error(
+        getErrorMessage(error, "Failed to resend OTP. Please try again."),
+      );
     } finally {
       setResendLoading(false);
     }
   };
 
   return (
-    <main className="relative min-h-screen bg-white overflow-hidden">
-      {/* Subtle dot-grid background */}
-      <div className="absolute inset-0 -z-10 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px]" />
-
-      <div className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 lg:grid-cols-2">
-
-        {/* LEFT PANEL – Branding */}
-        <div className="flex flex-col justify-center bg-gray-50 px-8 py-16 lg:px-16 xl:px-20">
-          {/* Logo */}
-          <div className="mb-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black text-xl font-bold text-white shadow-lg">
-              U
-            </div>
+    <AuthPageShell
+      title="Almost there"
+      description="Enter the 4-digit code sent to your email to complete account setup."
+      ctaText="Email verification"
+      ctaLink="/signup"
+      ctaLabel="Start again"
+      ctaPrompt="Need a fresh start?"
+      features={[
+        { icon: "✓", text: "Code valid for 10 minutes" },
+        { icon: "✓", text: "Resend anytime if needed" },
+        { icon: "✓", text: "Secure verification process" },
+      ]}
+    >
+      <div className="rounded-[2rem] border border-gray-200 bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.06)] sm:p-10">
+        <div className="mb-8 text-center">
+          <div
+            className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-3xl text-gray-700"
+            aria-hidden="true"
+          >
+            📩
           </div>
-
-          <h1 className="text-4xl font-extrabold tracking-tight text-black sm:text-5xl lg:text-6xl">
-            Almost there!<span className="block text-black">Verify your email.</span>
-          </h1>
-
-          <p className="mt-6 max-w-md text-lg leading-relaxed text-gray-600">
-            We've sent a 4-digit verification code to{" "}
-            <span className="font-semibold text-black">{data?.email || "your email"}</span>.
-            Enter it below to activate your account.
+          <h2 className="text-2xl font-bold text-black">
+            Verify your OTP
+          </h2>
+          <p className="mt-2 text-sm text-gray-500">
+            Enter the 4-digit code sent to{" "}
+            <span className="font-semibold text-black">{data.email}</span>
           </p>
-
-          <div className="mt-10 space-y-5">
-            {[
-              { icon: "✓", text: "Code valid for 10 minutes" },
-              { icon: "✓", text: "Didn't receive it? Resend anytime" },
-              { icon: "✓", text: "Your data stays secure & encrypted" },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-4">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black text-sm font-bold text-white">
-                  {item.icon}
-                </span>
-                <span className="text-base font-medium text-gray-700">{item.text}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-14 hidden w-24 border-t-2 border-black/10 lg:block" />
         </div>
 
-        {/* RIGHT PANEL – OTP Form */}
-        <div className="flex items-center justify-center px-6 py-12 lg:px-10">
-          <div className="w-full max-w-md">
-            <div className="rounded-[2rem] border border-gray-200 bg-white p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] sm:p-10">
-              {/* Icon */}
-              <div className="mb-8 text-center">
-                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-3xl">
-                  📩
-                </div>
-                <h2 className="text-2xl font-bold text-black">Verify Your OTP</h2>
-                <p className="mt-2 text-gray-500">Enter the 4-digit code we sent you</p>
-              </div>
+        <form onSubmit={onSubmitHandler} className="space-y-6" noValidate>
+          <div>
+            <label
+              htmlFor="verify-otp-input"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
+            >
+              OTP Code
+            </label>
+            <input
+              id="verify-otp-input"
+              type="text"
+              maxLength={4}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              placeholder="• • • •"
+              autoComplete="one-time-code"
+              className="w-full rounded-xl border border-gray-300 bg-white px-5 py-4 text-center text-2xl tracking-[0.5em] text-black outline-none transition placeholder:text-gray-300 focus:border-black focus:ring-2 focus:ring-black/10"
+              aria-label="Four digit OTP code"
+            />
+          </div>
 
-              <form onSubmit={onSubmitHandler} className="space-y-6">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                    OTP Code
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="• • • •"
-                    className="w-full rounded-xl border border-gray-300 bg-white py-4 px-4 text-center text-2xl tracking-[0.5em] text-black outline-none transition focus:border-black focus:ring-2 focus:ring-black/10"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`w-full rounded-full py-3 text-base font-bold text-white transition-all duration-300 ${
-                    loading
-                      ? "cursor-not-allowed bg-gray-400"
-                      : "bg-black hover:bg-gray-900 hover:shadow-lg active:scale-[0.98]"
-                  }`}
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <svg className="h-5 w-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                      </svg>
-                      Verifying...
-                    </div>
-                  ) : (
-                    "Verify OTP"
-                  )}
-                </button>
-              </form>
-
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={resendLoading}
-                className="mt-4 w-full rounded-full border border-gray-300 py-3 font-semibold text-gray-700 transition hover:bg-gray-50 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full rounded-full py-3 text-base font-bold text-white shadow-sm transition-all duration-300 ${
+              loading
+                ? "cursor-not-allowed bg-gray-400"
+                : "bg-black hover:bg-gray-900 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+            }`}
+          >
+            {loading ? (
+              <span
+                className="flex items-center justify-center gap-2"
+                role="status"
+                aria-label="Verifying OTP"
               >
-                {resendLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    Resending...
-                  </span>
-                ) : (
-                  "↺  Resend OTP"
-                )}
-              </button>
+                <svg
+                  className="h-5 w-5 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+                Verifying…
+              </span>
+            ) : (
+              "Verify OTP"
+            )}
+          </button>
+        </form>
 
-              <p className="mt-6 text-center text-sm text-gray-500">
-                Wrong email?{" "}
-                <Link to="/signup" className="font-semibold text-black underline underline-offset-2 transition hover:text-gray-600">
-                  Go Back
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-
+        <button
+          type="button"
+          onClick={handleResendOtp}
+          disabled={resendLoading}
+          className="mt-4 w-full rounded-full border border-gray-300 bg-white py-3 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {resendLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg
+                className="h-4 w-4 animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+              Resending…
+            </span>
+          ) : (
+            "↺ Resend OTP"
+          )}
+        </button>
       </div>
-    </main>
+    </AuthPageShell>
   );
 };
 
