@@ -70,6 +70,18 @@ const bookingSchema = new mongoose_1.default.Schema({
     },
     otp: {
         type: String
+    },
+    slotKey: {
+        type: String,
+        index: true,
+    },
+    assignedWorkerName: {
+        type: String,
+        default: "",
+    },
+    assignedWorkerEmail: {
+        type: String,
+        default: "",
     }
 }, { timestamps: true });
 exports.Booking = mongoose_1.default.model("Booking", bookingSchema);

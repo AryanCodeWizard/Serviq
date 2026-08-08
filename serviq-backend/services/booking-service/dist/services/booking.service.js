@@ -30,6 +30,13 @@ const resolveCustomerProfileEndpoint = () => {
         ? `${userServiceUrl}/api/v1/users/get-profile-details`
         : `${userServiceUrl}/get-profile-details`;
 };
+const resolveWorkersByCategoryEndpoint = (serviceCategory) => {
+    const userServiceUrl = (process.env.USER_SERVICE_URL || "http://localhost:6000").replace(/\/$/, "");
+    const encodedCategory = encodeURIComponent(serviceCategory);
+    return userServiceUrl.includes("3000")
+        ? `${userServiceUrl}/api/v1/users/workers?serviceCategory=${encodedCategory}`
+        : `${userServiceUrl}/workers?serviceCategory=${encodedCategory}`;
+};
 const buildBookingMailBody = (title, recipientName, booking) => {
     const serviceList = Array.isArray(booking.service) ? booking.service.join(", ") : booking.service;
     return `
@@ -95,63 +102,151 @@ const validateBookingOwnership = (booking, actorAuthId, actorRole) => {
         throw new appError_1.AppError("You are not allowed to access this booking", 403);
     }
 };
-const createBookingService = (data) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
-    const { customerAuthId, workerAuthId, service, bookingDate, bookingTime, customerAddress, customerPhoneNumber, price, problemDescription, workerPhoneNumber } = data;
-    const sameBookingCheck = yield booking_model_1.Booking.find({
-        customerAuthId: customerAuthId,
-        workerAuthId: workerAuthId,
-        service: { $all: service },
-        bookingStatus: "Pending"
-    });
-    if (sameBookingCheck.length > 0) {
-        throw new appError_1.AppError("Booking for same service already booked", 400);
+const getPreferredServiceCategory = (service) => {
+    if (!service || service.length === 0) {
+        return "";
     }
-    // Get worker details from user service
-    let workerResponse;
+    return service[0];
+};
+const buildBookingSlotKey = (bookingDate, bookingTime) => {
+    return `${bookingDate.trim()}::${bookingTime.trim()}`.toLowerCase();
+};
+const assignWorkerForBooking = (service, bookingDate, bookingTime, requestedWorkerAuthId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const preferredCategory = getPreferredServiceCategory(service);
+    if (requestedWorkerAuthId) {
+        try {
+            const workerResponse = yield axios_1.default.get(resolveUserServiceEndpoint(), {
+                params: { userId: requestedWorkerAuthId }
+            });
+            const worker = (_a = workerResponse === null || workerResponse === void 0 ? void 0 : workerResponse.data) === null || _a === void 0 ? void 0 : _a.data;
+            if (!worker) {
+                throw new appError_1.AppError("Worker not found", 404);
+            }
+            if (!worker.isVerifiedWorker) {
+                throw new appError_1.AppError("Worker is not verified", 403);
+            }
+            if (worker.isBlocked) {
+                throw new appError_1.AppError("Worker is blocked", 403);
+            }
+            if (!worker.isAvailable) {
+                throw new appError_1.AppError("Worker is not available to serve", 403);
+            }
+            if (worker.workerApplicationStatus !== "Approved") {
+                throw new appError_1.AppError("Worker application status is not approved", 403);
+            }
+            const existingBooking = yield booking_model_1.Booking.findOne({
+                workerAuthId: worker.authUserId || worker._id,
+                slotKey: buildBookingSlotKey(bookingDate, bookingTime),
+                bookingStatus: { $nin: ["Cancelled", "Completed"] },
+            });
+            if (existingBooking) {
+                throw new appError_1.AppError("The selected worker is already booked for that slot", 409);
+            }
+            return {
+                workerAuthId: worker.authUserId || worker._id,
+                workerPhoneNumber: worker.phone || "",
+                worker,
+            };
+        }
+        catch (error) {
+            if (error instanceof appError_1.AppError) {
+                throw error;
+            }
+            const status = ((_b = error.response) === null || _b === void 0 ? void 0 : _b.status) || 500;
+            const message = ((_d = (_c = error.response) === null || _c === void 0 ? void 0 : _c.data) === null || _d === void 0 ? void 0 : _d.message) || "Failed to fetch worker details or worker service unavailable";
+            throw new appError_1.AppError(message, status);
+        }
+    }
+    if (!preferredCategory) {
+        throw new appError_1.AppError("Service category is required to assign a worker", 400);
+    }
     try {
-        workerResponse = yield axios_1.default.get(resolveUserServiceEndpoint(), {
-            params: { userId: workerAuthId }
-        });
+        const workerResponse = yield axios_1.default.get(resolveWorkersByCategoryEndpoint(preferredCategory));
+        const workers = Array.isArray((_e = workerResponse === null || workerResponse === void 0 ? void 0 : workerResponse.data) === null || _e === void 0 ? void 0 : _e.data) ? workerResponse.data.data : [];
+        if (!workers.length) {
+            throw new appError_1.AppError("No workers available for the selected service", 404);
+        }
+        const eligibleWorkers = yield Promise.all(workers.map((worker) => __awaiter(void 0, void 0, void 0, function* () {
+            const workerAuthId = worker.authUserId || worker._id;
+            if (!workerAuthId) {
+                return null;
+            }
+            if (!worker.isVerifiedWorker || worker.isBlocked || !worker.isAvailable || worker.workerApplicationStatus !== "Approved") {
+                return null;
+            }
+            const conflictingBooking = yield booking_model_1.Booking.findOne({
+                workerAuthId,
+                slotKey: buildBookingSlotKey(bookingDate, bookingTime),
+                bookingStatus: { $nin: ["Cancelled", "Completed"] },
+            });
+            if (conflictingBooking) {
+                return null;
+            }
+            const bookingCount = yield booking_model_1.Booking.countDocuments({
+                workerAuthId,
+                bookingStatus: { $nin: ["Cancelled", "Completed"] },
+            });
+            return {
+                workerAuthId,
+                workerPhoneNumber: worker.phone || "",
+                worker,
+                bookingCount,
+            };
+        })));
+        const availableWorkers = eligibleWorkers.filter((candidate) => Boolean(candidate));
+        if (!availableWorkers.length) {
+            throw new appError_1.AppError("No workers available for the selected date and time", 409);
+        }
+        availableWorkers.sort((a, b) => { var _a, _b; return ((_a = a.bookingCount) !== null && _a !== void 0 ? _a : 0) - ((_b = b.bookingCount) !== null && _b !== void 0 ? _b : 0); });
+        availableWorkers.sort((a, b) => { var _a, _b; var _c, _d; return ((_c = a.bookingCount) !== null && _c !== void 0 ? _c : 0) - ((_d = b.bookingCount) !== null && _d !== void 0 ? _d : 0) || (Number(((_a = b.worker) === null || _a === void 0 ? void 0 : _a.averageRating) || 0) - Number(((_b = a.worker) === null || _b === void 0 ? void 0 : _b.averageRating) || 0)); });
+        return availableWorkers[0];
     }
-    catch (err) {
-        console.error("Axios Error Details:", ((_a = err.response) === null || _a === void 0 ? void 0 : _a.data) || err.message);
-        const status = ((_b = err.response) === null || _b === void 0 ? void 0 : _b.status) || 500;
-        const message = ((_d = (_c = err.response) === null || _c === void 0 ? void 0 : _c.data) === null || _d === void 0 ? void 0 : _d.message) || "Failed to fetch worker details or worker service unavailable";
+    catch (error) {
+        if (error instanceof appError_1.AppError) {
+            throw error;
+        }
+        const status = ((_f = error.response) === null || _f === void 0 ? void 0 : _f.status) || 500;
+        const message = ((_h = (_g = error.response) === null || _g === void 0 ? void 0 : _g.data) === null || _h === void 0 ? void 0 : _h.message) || "Failed to fetch worker availability";
         throw new appError_1.AppError(message, status);
     }
-    const worker = (_e = workerResponse === null || workerResponse === void 0 ? void 0 : workerResponse.data) === null || _e === void 0 ? void 0 : _e.data;
-    if (!worker) {
-        throw new appError_1.AppError("Worker not found", 404);
+});
+const createBookingService = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    const { customerAuthId, workerAuthId, service, bookingDate, bookingTime, customerAddress, customerPhoneNumber, price, problemDescription, workerPhoneNumber } = data;
+    const sameBookingCheck = yield booking_model_1.Booking.find({
+        customerAuthId,
+        service: { $all: service },
+        bookingDate,
+        bookingTime,
+        bookingStatus: { $in: ["Pending", "Accepted", "In Progress"] }
+    });
+    if (sameBookingCheck.length > 0) {
+        throw new appError_1.AppError("Booking for the same service at the selected slot already exists", 400);
     }
-    // Verify worker eligibility
-    if (!worker.isVerifiedWorker) {
-        throw new appError_1.AppError("Worker is not verified", 403);
-    }
-    if (worker.isBlocked) {
-        throw new appError_1.AppError("Worker is blocked", 403);
-    }
-    if (!worker.isAvailable) {
-        throw new appError_1.AppError("Worker is not available to serve", 403);
-    }
-    if (worker.workerApplicationStatus !== "Approved") {
-        throw new appError_1.AppError("Worker application status is not approved", 403);
-    }
+    const assignedWorker = yield assignWorkerForBooking(service, bookingDate, bookingTime, workerAuthId);
+    const workerAuthIdToAssign = assignedWorker.workerAuthId;
+    const slotKey = buildBookingSlotKey(bookingDate, bookingTime);
+    const assignedWorkerName = ((_a = assignedWorker.worker) === null || _a === void 0 ? void 0 : _a.fullName) || ((_b = assignedWorker.worker) === null || _b === void 0 ? void 0 : _b.name) || "";
+    const assignedWorkerEmail = ((_c = assignedWorker.worker) === null || _c === void 0 ? void 0 : _c.email) || "";
     // Generate 4-digit OTP for booking verification
     const otp = data.otp || crypto_1.default.randomInt(1000, 10000).toString();
     // Generate new booking
     const newBooking = yield booking_model_1.Booking.create({
         customerAuthId,
-        workerAuthId,
+        workerAuthId: workerAuthIdToAssign,
         service,
         bookingDate,
         bookingTime,
         customerAddress,
         customerPhoneNumber,
-        workerPhoneNumber,
+        workerPhoneNumber: workerPhoneNumber || assignedWorker.workerPhoneNumber || "",
         problemDescription,
         price,
         otp,
+        slotKey,
+        assignedWorkerName,
+        assignedWorkerEmail,
     });
     void dispatchBookingEmails(newBooking);
     return newBooking;
