@@ -53,11 +53,10 @@ const Navbar = () => {
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-6 md:flex">
           <NavLink to="/" end className={navLinkClass}>Home</NavLink>
-          {session?.accessToken && (
-            <NavLink to="/bookings" className={navLinkClass}>Bookings</NavLink>
-          )}
+          <NavLink to="/services" className={navLinkClass}>Services</NavLink>
+          <NavLink to="/bookings" className={navLinkClass}>My Bookings</NavLink>
           {session?.accessToken && (
             <NavLink to="/dashboard" className={navLinkClass}>Dashboard</NavLink>
           )}
@@ -92,10 +91,10 @@ const Navbar = () => {
                 Log in
               </NavLink>
               <NavLink
-                to="/signup"
+                to="/bookings"
                 className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-gray-800 hover:shadow-lg active:scale-[0.98]"
               >
-                Get Started
+                Book a Service
               </NavLink>
             </>
           )}
@@ -139,8 +138,11 @@ const Navbar = () => {
 
           {session?.accessToken ? (
             <>
+              <NavLink to="/services" onClick={() => setIsOpen(false)} className={activeMobileClass}>
+                Services
+              </NavLink>
               <NavLink to="/bookings" onClick={() => setIsOpen(false)} className={activeMobileClass}>
-                Bookings
+                My Bookings
               </NavLink>
               <NavLink to="/dashboard" onClick={() => setIsOpen(false)} className={activeMobileClass}>
                 Dashboard

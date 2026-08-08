@@ -14,6 +14,7 @@ import Dashboard from "../features/dashboard/pages/Dashboard";
 import NotFound from "../pages/NotFound";
 import Bookings from "../features/booking/pages/Bookings";
 import BookingDetails from "../features/booking/pages/BookingDetails";
+import Services from "../features/services/pages/Services";
 
 export const routes = createBrowserRouter([
     {
@@ -30,6 +31,16 @@ export const routes = createBrowserRouter([
                     {
                         index: true,
                         element: <Dashboard />,
+                    },
+                ],
+            },
+            {
+                path: "/services",
+                element: <ProtectedRoute />,
+                children: [
+                    {
+                        index: true,
+                        element: <Services />,
                     },
                 ],
             },
