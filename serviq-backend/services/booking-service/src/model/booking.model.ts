@@ -2,13 +2,13 @@ import mongoose from 'mongoose';
 
 export interface IBookingData {
     customerAuthId: string;
-    workerAuthId: string;
+    workerAuthId?: string;
     service: string[];
     bookingDate: string;
     bookingTime: string;
     customerAddress: string;
     customerPhoneNumber: string;
-    workerPhoneNumber: string;
+    workerPhoneNumber?: string;
     problemDescription: string;
     price: number;
     paymentMethod?: "Cash" | "Online" | "Not Selected";
@@ -18,6 +18,9 @@ export interface IBookingData {
     customerRating?: number;
     customerReview?: string;
     otp?: string;
+    slotKey?: string;
+    assignedWorkerName?: string;
+    assignedWorkerEmail?: string;
 }
 
 const bookingSchema = new mongoose.Schema<IBookingData>({
@@ -85,6 +88,18 @@ const bookingSchema = new mongoose.Schema<IBookingData>({
     },
     otp: {
         type: String
+    },
+    slotKey: {
+        type: String,
+        index: true,
+    },
+    assignedWorkerName: {
+        type: String,
+        default: "",
+    },
+    assignedWorkerEmail: {
+        type: String,
+        default: "",
     }
 
 },{timestamps:true})
