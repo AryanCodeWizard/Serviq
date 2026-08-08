@@ -1,13 +1,26 @@
 import { RouterProvider } from "react-router-dom";
 import "./App.css";
 import { routes } from "./app/routes";
-import {Toaster} from 'react-hot-toast'
-
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
-    <div className="min-h-screen w-full bg-[#F8F9FA] text-[#1A1A1A] antialiased">
+    <div
+      className="min-h-screen w-full bg-gray-50 text-slate-950 antialiased selection:bg-black selection:text-white"
+      aria-label="Application"
+    >
+      {/* Subtle global grid pattern for a cohesive brand feel */}
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 opacity-[0.015]"
+        style={{
+          backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+        aria-hidden="true"
+      />
+
       <RouterProvider router={routes} />
+
       <Toaster
         position="top-right"
         reverseOrder={false}
@@ -17,9 +30,10 @@ function App() {
             fontFamily: "'Manrope', sans-serif",
             fontSize: "14px",
             fontWeight: 500,
-            borderRadius: "14px",
-            padding: "14px 18px",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)",
+            borderRadius: "16px",
+            padding: "14px 20px",
+            boxShadow:
+              "0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)",
             maxWidth: "380px",
             border: "1px solid rgba(0,0,0,0.06)",
           },
